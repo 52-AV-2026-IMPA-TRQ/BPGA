@@ -1,0 +1,20 @@
+# BPGA - EDU-CIAA-NXP + FreeRTOS
+
+# Compilacion
+VERBOSE=n
+OPT=g
+USE_NANO=y
+SEMIHOST=n
+USE_FPU=y
+
+# Bibliotecas de soporte
+USE_LPCOPEN=y
+USE_SAPI=y
+
+# FreeRTOS
+USE_FREERTOS=y
+FREERTOS_HEAP_TYPE=1
+
+# sAPI utiliza el SysTick de FreeRTOS
+DEFINES+=TICK_OVER_RTOS
+DEFINES+=USE_FREERTOS

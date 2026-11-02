@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "BPGA: compilar",
+      "type": "shell",
+      "command": "make -j$(nproc)",
+      "problemMatcher": "$gcc",
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+    },
+    {
+      "label": "BPGA: limpiar",
+      "type": "shell",
+      "command": "make clean",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    }
+  ]
+}

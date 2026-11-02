@@ -1,0 +1,17 @@
+# Resultados de compilacion
+**/out/
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+
+# Registros
+*.log
+
+# Archivos temporales
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.tmp

@@ -1,53 +1,70 @@
-/*
- * BPGA
- * Banco de Prueba de Generadores Aeronauticos
- * EDU-CIAA-NXP + FreeRTOS
- */
+/* BPGA - EDU-CIAA-NXP + FreeRTOS */
 
 #include <stdint.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "sapi.h"
+#include "bpga_measurement.h"
+#include "bpga_simulator.h"
 
-#define BPGA_BLINK_PERIOD_MS  500U
-#define BPGA_BLINK_PRIORITY   (tskIDLE_PRIORITY + 1U)
+#define BPGA_HEARTBEAT_PRIORITY    (tskIDLE_PRIORITY + 1U)
+#define BPGA_MEASUREMENT_PRIORITY  (tskIDLE_PRIORITY + 2U)
+#define BPGA_SIMULATOR_PRIORITY    (tskIDLE_PRIORITY + 3U)
 
-static void bpgaBlinkTask(void *parameters)
+static void bpgaHeartbeatTask(void *parameters)
 {
-    TickType_t lastWakeTime;
+    TickType_t lastWake = xTaskGetTickCount();
     (void)parameters;
-    lastWakeTime = xTaskGetTickCount();
-
     for (;;) {
         gpioToggle(LEDB);
-        vTaskDelayUntil(&lastWakeTime, pdMS_TO_TICKS(BPGA_BLINK_PERIOD_MS));
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(500U));
     }
 }
 
-int main(void)
+static void bpgaFatalError(void)
 {
-    BaseType_t taskStatus;
-
-    boardConfig();
     gpioWrite(LEDB, OFF);
-    gpioWrite(LEDR, OFF);
-
-    taskStatus = xTaskCreate(
-        bpgaBlinkTask,
-        "BPGA_LED",
-        configMINIMAL_STACK_SIZE,
-        NULL,
-        BPGA_BLINK_PRIORITY,
-        NULL
-    );
-
-    configASSERT(taskStatus == pdPASS);
-    vTaskStartScheduler();
-
+    gpioWrite(LEDG, OFF);
     for (;;) {
         gpioToggle(LEDR);
         for (volatile uint32_t delay = 0U; delay < 1000000U; ++delay) {
             __asm volatile ("nop");
         }
     }
+}
+
+int main(void)
+{
+    BaseType_t status = pdPASS;
+
+    boardConfig();
+    gpioWrite(LEDB, OFF);
+    gpioWrite(LEDG, OFF);
+    gpioWrite(LEDR, OFF);
+
+    status = bpgaMeasurementInit();
+    if (status != pdPASS) {
+        bpgaFatalError();
+    }
+
+    status = xTaskCreate(bpgaMeasurementTask, "BPGA_DATA",
+                         configMINIMAL_STACK_SIZE * 2U, NULL,
+                         BPGA_MEASUREMENT_PRIORITY, NULL);
+    if (status == pdPASS) {
+        status = xTaskCreate(bpgaSimulatorTask, "BPGA_SIM",
+                             configMINIMAL_STACK_SIZE * 2U, NULL,
+                             BPGA_SIMULATOR_PRIORITY, NULL);
+    }
+    if (status == pdPASS) {
+        status = xTaskCreate(bpgaHeartbeatTask, "BPGA_LED",
+                             configMINIMAL_STACK_SIZE, NULL,
+                             BPGA_HEARTBEAT_PRIORITY, NULL);
+    }
+    if (status != pdPASS) {
+        bpgaFatalError();
+    }
+
+    vTaskStartScheduler();
+    bpgaFatalError();
+    return 0;
 }

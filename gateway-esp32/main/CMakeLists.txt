@@ -12,6 +12,7 @@ idf_component_register(
         bench_simulator
         bench_controller
         board
+        protocol_examples_common
     INCLUDE_DIRS
         "."
 )

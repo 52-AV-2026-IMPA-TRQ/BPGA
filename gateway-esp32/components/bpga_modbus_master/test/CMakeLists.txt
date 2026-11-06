@@ -1,0 +1,9 @@
+idf_component_register(
+    SRC_DIRS
+        "."
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        unity
+        bpga_modbus_master
+)

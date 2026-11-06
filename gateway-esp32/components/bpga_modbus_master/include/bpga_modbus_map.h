@@ -46,7 +46,7 @@ extern "C" {
 
 /* ============================================================================
  * INPUT REGISTERS (Read-only)
- * 
+ *
  * Note: References 30001 and 40001 (Modbus SCADA convention) are documentary
  * only and must NOT be transmitted in the PDU. PDU addresses are zero-based.
  * ============================================================================ */
@@ -152,7 +152,7 @@ typedef enum {
 
 /* ============================================================================
  * HOLDING REGISTERS (Read-Write)
- * 
+ *
  * Note: References 40001 onwards (Modbus SCADA convention) are documentary
  * only and must NOT be transmitted in the PDU. PDU addresses are zero-based.
  * ============================================================================ */
@@ -388,7 +388,7 @@ typedef enum {
 
 /* ============================================================================
  * LOGICAL STRUCTURES
- * 
+ *
  * These structures contain decoded data and must NOT be mapped directly
  * onto Modbus buffers. Use encode/decode functions instead.
  * ============================================================================ */
@@ -514,7 +514,7 @@ bool bpga_modbus_is_valid_permille(uint16_t value);
 
 /* ============================================================================
  * DECODING FUNCTIONS
- * 
+ *
  * All decoding functions:
  * - validate pointers
  * - validate minimum register count

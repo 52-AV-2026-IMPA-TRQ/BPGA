@@ -510,4 +510,3 @@ TEST_CASE("funciones de decodificación rechazan punteros nulos", "[bpga_modbus_
     TEST_ASSERT_FALSE(bpga_modbus_decode_diagnostics(registers, 16, NULL));
     TEST_ASSERT_FALSE(bpga_modbus_decode_command_response(registers, 4, NULL));
 }
-

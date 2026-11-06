@@ -12,6 +12,7 @@ idf_component_register(
         bench_simulator
         bench_controller
         board
+        bpga_modbus_master
         protocol_examples_common
     INCLUDE_DIRS
         "."

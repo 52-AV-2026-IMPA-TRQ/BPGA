@@ -1,0 +1,102 @@
+menu "BPGA Modbus Master"
+
+config BPGA_MODBUS_ENABLED
+    bool "Enable Modbus RTU master"
+    default n
+    help
+        Enable the Modbus RTU master client.
+        When disabled, the component compiles but does not initialize.
+
+config BPGA_MODBUS_UART_PORT
+    int "UART port number"
+    default 2
+    range 0 2
+    depends on BPGA_MODBUS_ENABLED
+    help
+        UART port for Modbus RTU communication (0=UART0, 1=UART1, 2=UART2).
+
+config BPGA_MODBUS_UART_TX_GPIO
+    int "UART TX GPIO pin"
+    default -1
+    depends on BPGA_MODBUS_ENABLED
+    help
+        GPIO pin for UART TX. Must be set when Modbus is enabled.
+
+config BPGA_MODBUS_UART_RX_GPIO
+    int "UART RX GPIO pin"
+    default -1
+    depends on BPGA_MODBUS_ENABLED
+    help
+        GPIO pin for UART RX. Must be set when Modbus is enabled.
+
+config BPGA_MODBUS_UART_RTS_GPIO
+    int "UART RTS/DE-RE GPIO pin"
+    default -1
+    depends on BPGA_MODBUS_ENABLED
+    help
+        GPIO pin for UART RTS (RS-485 driver enable/receive disable).
+        Required for RS-485 half-duplex mode when Modbus is enabled.
+
+config BPGA_MODBUS_SLAVE_ADDRESS
+    int "Modbus slave address"
+    default 1
+    range 1 247
+    depends on BPGA_MODBUS_ENABLED
+    help
+        Modbus RTU slave address (1-247).
+
+config BPGA_MODBUS_BAUD_RATE
+    int "UART baud rate"
+    default 115200
+    depends on BPGA_MODBUS_ENABLED
+    help
+        UART baud rate in bits per second.
+
+config BPGA_MODBUS_RESPONSE_TIMEOUT_MS
+    int "Modbus response timeout (ms)"
+    default 100
+    range 10 1000
+    depends on BPGA_MODBUS_ENABLED
+    help
+        Maximum wait time for Modbus response in milliseconds.
+
+config BPGA_MODBUS_RETRY_COUNT
+    int "Modbus retry count"
+    default 2
+    range 0 10
+    depends on BPGA_MODBUS_ENABLED
+    help
+        Number of retries for failed Modbus requests.
+
+config BPGA_MODBUS_POLL_PERIOD_MS
+    int "Modbus poll period (ms)"
+    default 100
+    range 10 5000
+    depends on BPGA_MODBUS_ENABLED
+    help
+        Period for periodic polling (configuration only; not implemented yet).
+
+choice BPGA_MODBUS_PARITY_CHOICE
+    prompt "UART parity"
+    default BPGA_MODBUS_PARITY_EVEN
+    depends on BPGA_MODBUS_ENABLED
+
+    config BPGA_MODBUS_PARITY_NONE
+        bool "None"
+
+    config BPGA_MODBUS_PARITY_EVEN
+        bool "Even"
+
+    config BPGA_MODBUS_PARITY_ODD
+        bool "Odd"
+
+endchoice
+
+config BPGA_MODBUS_PARITY
+    int
+    depends on BPGA_MODBUS_ENABLED
+    default 0 if BPGA_MODBUS_PARITY_NONE
+    default 1 if BPGA_MODBUS_PARITY_EVEN
+    default 2 if BPGA_MODBUS_PARITY_ODD
+
+endmenu

@@ -10,6 +10,7 @@
 #include "bench_profiles.h"
 #include "bench_simulator.h"
 #include "bench_controller.h"
+#include "bpga_modbus_master.h"
 #include "esp_littlefs.h"
 #include "nvs_flash.h"
 #include "esp_netif.h"
@@ -82,6 +83,10 @@ void app_main(void)
     ESP_ERROR_CHECK(bench_profiles_init());
     ESP_ERROR_CHECK(bench_simulator_start());
     ESP_ERROR_CHECK(bench_controller_start());
+
+    if (!bpga_modbus_master_init()) {
+        ESP_LOGW(TAG, "Modbus master initialization failed, continuing without Modbus");
+    }
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());

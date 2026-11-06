@@ -56,7 +56,7 @@ static bool validate_configuration(void)
         ESP_LOGE(TAG, "Invalid UART port: %d", CONFIG_BPGA_MODBUS_UART_PORT);
         return false;
     }
-    if (CONFIG_BPGA_MODBUS_UART_TX_GPIO < 0 || 
+    if (CONFIG_BPGA_MODBUS_UART_TX_GPIO < 0 ||
         CONFIG_BPGA_MODBUS_UART_RX_GPIO < 0 ||
         CONFIG_BPGA_MODBUS_UART_RTS_GPIO < 0) {
         ESP_LOGE(TAG, "TX, RX, and RTS GPIO pins must not be negative");

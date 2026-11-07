@@ -180,6 +180,114 @@ bpga_modbus_master_status_t bpga_modbus_master_get_status(void)
     return status;
 }
 
+static bool read_input_registers_block(
+    uint16_t reg_start,
+    uint16_t reg_count,
+    uint16_t *buffer
+)
+{
+    if (!bpga_modbus_master_is_ready()) {
+        ESP_LOGW(TAG, "Modbus master not ready");
+        return false;
+    }
+
+    mb_param_request_t request = {
+        .slave_addr = CONFIG_BPGA_MODBUS_SLAVE_ADDRESS,
+        .command = BPGA_MODBUS_FC_READ_INPUT_REGISTERS,
+        .reg_start = reg_start,
+        .reg_size = reg_count,
+    };
+
+    esp_err_t err = mbc_master_send_request(modbus_handle, &request, (void *)buffer);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Modbus read at 0x%04X failed: %s", reg_start, esp_err_to_name(err));
+        return false;
+    }
+
+    return true;
+}
+
+bool bpga_modbus_master_read_identification(
+    bpga_modbus_identification_t *output
+)
+{
+    if (output == NULL) {
+        return false;
+    }
+
+    uint16_t registers[BPGA_MODBUS_IDENTIFICATION_COUNT];
+    if (!read_input_registers_block(
+            BPGA_MODBUS_IDENTIFICATION_START,
+            BPGA_MODBUS_IDENTIFICATION_COUNT,
+            registers)) {
+        return false;
+    }
+
+    if (!bpga_modbus_decode_identification(
+            registers,
+            BPGA_MODBUS_IDENTIFICATION_COUNT,
+            output)) {
+        ESP_LOGW(TAG, "Failed to decode identification block");
+        return false;
+    }
+
+    return true;
+}
+
+bool bpga_modbus_master_read_snapshot(
+    bpga_modbus_snapshot_t *output
+)
+{
+    if (output == NULL) {
+        return false;
+    }
+
+    uint16_t registers[BPGA_MODBUS_SNAPSHOT_COUNT];
+    if (!read_input_registers_block(
+            BPGA_MODBUS_SNAPSHOT_START,
+            BPGA_MODBUS_SNAPSHOT_COUNT,
+            registers)) {
+        return false;
+    }
+
+    if (!bpga_modbus_decode_snapshot(
+            registers,
+            BPGA_MODBUS_SNAPSHOT_COUNT,
+            output)) {
+        ESP_LOGW(TAG, "Failed to decode snapshot block");
+        return false;
+    }
+
+    return true;
+}
+
+bool bpga_modbus_master_read_diagnostics(
+    bpga_modbus_diagnostics_t *output
+)
+{
+    if (output == NULL) {
+        return false;
+    }
+
+    uint16_t registers[BPGA_MODBUS_DIAGNOSTICS_COUNT];
+    if (!read_input_registers_block(
+            BPGA_MODBUS_DIAGNOSTICS_START,
+            BPGA_MODBUS_DIAGNOSTICS_COUNT,
+            registers)) {
+        return false;
+    }
+
+    if (!bpga_modbus_decode_diagnostics(
+            registers,
+            BPGA_MODBUS_DIAGNOSTICS_COUNT,
+            output)) {
+        ESP_LOGW(TAG, "Failed to decode diagnostics block");
+        return false;
+    }
+
+    return true;
+}
+
 #else
 
 bool bpga_modbus_master_init(void)
@@ -207,6 +315,30 @@ bpga_modbus_master_status_t bpga_modbus_master_get_status(void)
         .rts_gpio = -1,
     };
     return status;
+}
+
+bool bpga_modbus_master_read_identification(
+    bpga_modbus_identification_t *output
+)
+{
+    (void)output;
+    return false;
+}
+
+bool bpga_modbus_master_read_snapshot(
+    bpga_modbus_snapshot_t *output
+)
+{
+    (void)output;
+    return false;
+}
+
+bool bpga_modbus_master_read_diagnostics(
+    bpga_modbus_diagnostics_t *output
+)
+{
+    (void)output;
+    return false;
 }
 
 #endif

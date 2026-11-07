@@ -46,6 +46,14 @@ typedef struct {
     uint32_t failed_reads;
 } bpga_modbus_master_cache_t;
 
+typedef struct {
+    bool enabled;
+    bool running;
+    uint32_t period_ms;
+    uint32_t completed_cycles;
+    uint32_t failed_cycles;
+} bpga_modbus_poll_status_t;
+
 /*
  * Before the first successful mutex creation, serialize all API calls,
  * including init. Afterwards, access is serialized internally.
@@ -73,6 +81,20 @@ bool bpga_modbus_master_get_cache(
  * If the mutex cannot be acquired, the cache is unchanged.
  */
 void bpga_modbus_master_clear_cache(void);
+
+/*
+ * Polling only updates the Modbus cache; it does not change the simulator or
+ * the active data source. These functions must not be called from an ISR.
+ * Starting is idempotent; stopping is safe and repeatable.
+ * If stopping times out, the task remains running until it can exit.
+ * A cycle is not counted if its status cannot be locked.
+ */
+bool bpga_modbus_master_start_polling(void);
+
+void bpga_modbus_master_stop_polling(void);
+
+/* On lock failure, returns running=false without changing the polling state. */
+bpga_modbus_poll_status_t bpga_modbus_master_get_poll_status(void);
 
 /**
  * @brief Read identification block (16 input registers at 0x0000-0x000F).

@@ -68,13 +68,18 @@ config BPGA_MODBUS_RETRY_COUNT
     help
         Number of retries for failed Modbus requests.
 
+config BPGA_MODBUS_POLL_ENABLED
+    bool "Enable periodic Modbus polling"
+    default n
+    depends on BPGA_MODBUS_ENABLED
+
 config BPGA_MODBUS_POLL_PERIOD_MS
     int "Modbus poll period (ms)"
     default 100
-    range 10 5000
-    depends on BPGA_MODBUS_ENABLED
+    range 50 5000
+    depends on BPGA_MODBUS_ENABLED && BPGA_MODBUS_POLL_ENABLED
     help
-        Period for periodic polling (configuration only; not implemented yet).
+        Period for updating the Modbus cache.
 
 choice BPGA_MODBUS_PARITY_CHOICE
     prompt "UART parity"

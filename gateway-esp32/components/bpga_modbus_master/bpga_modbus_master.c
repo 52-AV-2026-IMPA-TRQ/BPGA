@@ -8,6 +8,7 @@
 #include "driver/uart.h"
 #include "esp_log.h"
 #include "esp_modbus_master.h"
+#include "esp_timer.h"
 
 static const char *TAG = "BPGA_MODBUS_MASTER";
 
@@ -23,6 +24,7 @@ static bpga_modbus_master_status_t status = {
 };
 
 static void *modbus_handle;
+static bpga_modbus_master_cache_t cache;
 
 static const mb_parameter_descriptor_t device_parameters[] = {
     {
@@ -180,7 +182,35 @@ bpga_modbus_master_status_t bpga_modbus_master_get_status(void)
     return status;
 }
 
-static bool read_input_registers_block(
+bool bpga_modbus_master_get_cache(bpga_modbus_master_cache_t *output)
+{
+    if (output == NULL) {
+        return false;
+    }
+    *output = cache;
+    return true;
+}
+
+void bpga_modbus_master_clear_cache(void)
+{
+    cache = (bpga_modbus_master_cache_t){0};
+}
+
+static void record_read_success(void)
+{
+    cache.last_success_us = (uint64_t)esp_timer_get_time();
+    cache.successful_reads++;
+    cache.last_error = 0;
+}
+
+static void record_read_failure(esp_err_t err)
+{
+    cache.last_error_us = (uint64_t)esp_timer_get_time();
+    cache.last_error = err;
+    cache.failed_reads++;
+}
+
+static esp_err_t read_input_registers_block(
     uint16_t reg_start,
     uint16_t reg_count,
     uint16_t *buffer
@@ -188,7 +218,7 @@ static bool read_input_registers_block(
 {
     if (!bpga_modbus_master_is_ready()) {
         ESP_LOGW(TAG, "Modbus master not ready");
-        return false;
+        return ESP_FAIL;
     }
 
     mb_param_request_t request = {
@@ -198,13 +228,12 @@ static bool read_input_registers_block(
         .reg_size = reg_count,
     };
 
-    esp_err_t err = mbc_master_send_request(modbus_handle, &request, (void *)buffer);
+    esp_err_t err = mbc_master_send_request(modbus_handle, &request, buffer);
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Modbus read at 0x%04X failed: %s", reg_start, esp_err_to_name(err));
-        return false;
     }
 
-    return true;
+    return err;
 }
 
 bool bpga_modbus_master_read_identification(
@@ -216,21 +245,29 @@ bool bpga_modbus_master_read_identification(
     }
 
     uint16_t registers[BPGA_MODBUS_IDENTIFICATION_COUNT];
-    if (!read_input_registers_block(
+    esp_err_t err = read_input_registers_block(
             BPGA_MODBUS_IDENTIFICATION_START,
             BPGA_MODBUS_IDENTIFICATION_COUNT,
-            registers)) {
+            registers);
+    if (err != ESP_OK) {
+        record_read_failure(err);
         return false;
     }
 
+    bpga_modbus_identification_t decoded;
     if (!bpga_modbus_decode_identification(
             registers,
             BPGA_MODBUS_IDENTIFICATION_COUNT,
-            output)) {
+            &decoded)) {
         ESP_LOGW(TAG, "Failed to decode identification block");
+        record_read_failure(ESP_FAIL);
         return false;
     }
 
+    *output = decoded;
+    cache.identification = decoded;
+    cache.identification_valid = true;
+    record_read_success();
     return true;
 }
 
@@ -243,21 +280,29 @@ bool bpga_modbus_master_read_snapshot(
     }
 
     uint16_t registers[BPGA_MODBUS_SNAPSHOT_COUNT];
-    if (!read_input_registers_block(
+    esp_err_t err = read_input_registers_block(
             BPGA_MODBUS_SNAPSHOT_START,
             BPGA_MODBUS_SNAPSHOT_COUNT,
-            registers)) {
+            registers);
+    if (err != ESP_OK) {
+        record_read_failure(err);
         return false;
     }
 
+    bpga_modbus_snapshot_t decoded;
     if (!bpga_modbus_decode_snapshot(
             registers,
             BPGA_MODBUS_SNAPSHOT_COUNT,
-            output)) {
+            &decoded)) {
         ESP_LOGW(TAG, "Failed to decode snapshot block");
+        record_read_failure(ESP_FAIL);
         return false;
     }
 
+    *output = decoded;
+    cache.snapshot = decoded;
+    cache.snapshot_valid = true;
+    record_read_success();
     return true;
 }
 
@@ -270,21 +315,29 @@ bool bpga_modbus_master_read_diagnostics(
     }
 
     uint16_t registers[BPGA_MODBUS_DIAGNOSTICS_COUNT];
-    if (!read_input_registers_block(
+    esp_err_t err = read_input_registers_block(
             BPGA_MODBUS_DIAGNOSTICS_START,
             BPGA_MODBUS_DIAGNOSTICS_COUNT,
-            registers)) {
+            registers);
+    if (err != ESP_OK) {
+        record_read_failure(err);
         return false;
     }
 
+    bpga_modbus_diagnostics_t decoded;
     if (!bpga_modbus_decode_diagnostics(
             registers,
             BPGA_MODBUS_DIAGNOSTICS_COUNT,
-            output)) {
+            &decoded)) {
         ESP_LOGW(TAG, "Failed to decode diagnostics block");
+        record_read_failure(ESP_FAIL);
         return false;
     }
 
+    *output = decoded;
+    cache.diagnostics = decoded;
+    cache.diagnostics_valid = true;
+    record_read_success();
     return true;
 }
 
@@ -315,6 +368,19 @@ bpga_modbus_master_status_t bpga_modbus_master_get_status(void)
         .rts_gpio = -1,
     };
     return status;
+}
+
+bool bpga_modbus_master_get_cache(bpga_modbus_master_cache_t *output)
+{
+    if (output == NULL) {
+        return false;
+    }
+    *output = (bpga_modbus_master_cache_t){0};
+    return true;
+}
+
+void bpga_modbus_master_clear_cache(void)
+{
 }
 
 bool bpga_modbus_master_read_identification(

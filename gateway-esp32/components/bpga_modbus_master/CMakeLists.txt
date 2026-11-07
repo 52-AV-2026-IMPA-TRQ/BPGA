@@ -9,4 +9,5 @@ idf_component_register(
         esp-modbus
         esp_driver_uart
         esp_driver_gpio
+        esp_timer
 )

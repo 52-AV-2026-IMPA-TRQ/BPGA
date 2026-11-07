@@ -9,6 +9,10 @@
 #include "esp_log.h"
 #include "esp_modbus_master.h"
 #include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
+#define BPGA_MODBUS_MUTEX_TIMEOUT_MS 1000
 
 static const char *TAG = "BPGA_MODBUS_MASTER";
 
@@ -25,6 +29,29 @@ static bpga_modbus_master_status_t status = {
 
 static void *modbus_handle;
 static bpga_modbus_master_cache_t cache;
+static SemaphoreHandle_t master_mutex;
+
+static bool master_lock(void)
+{
+    if (master_mutex == NULL) {
+        return false;
+    }
+    if (xSemaphoreTake(master_mutex, pdMS_TO_TICKS(BPGA_MODBUS_MUTEX_TIMEOUT_MS)) != pdTRUE) {
+        ESP_LOGW(TAG, "Timed out waiting for Modbus mutex");
+        return false;
+    }
+    return true;
+}
+
+static void master_unlock(void)
+{
+    xSemaphoreGive(master_mutex);
+}
+
+static bool master_is_ready_unlocked(void)
+{
+    return status.initialized && status.state == BPGA_MODBUS_MASTER_READY;
+}
 
 static const mb_parameter_descriptor_t device_parameters[] = {
     {
@@ -89,11 +116,26 @@ static bool validate_configuration(void)
 
 bool bpga_modbus_master_init(void)
 {
+    if (master_mutex == NULL) {
+        master_mutex = xSemaphoreCreateMutex();
+        if (master_mutex == NULL) {
+            status.state = BPGA_MODBUS_MASTER_ERROR;
+            status.last_error = ESP_ERR_NO_MEM;
+            ESP_LOGE(TAG, "Failed to create Modbus mutex");
+            return false;
+        }
+    }
+    if (!master_lock()) {
+        return false;
+    }
     if (status.initialized) {
-        return status.state == BPGA_MODBUS_MASTER_READY;
+        bool ready = master_is_ready_unlocked();
+        master_unlock();
+        return ready;
     }
     if (modbus_handle != NULL) {
         ESP_LOGE(TAG, "Previous Modbus controller has not been deleted");
+        master_unlock();
         return false;
     }
 
@@ -102,6 +144,7 @@ bool bpga_modbus_master_init(void)
     if (!validate_configuration()) {
         status.last_error = ESP_ERR_INVALID_ARG;
         status.state = BPGA_MODBUS_MASTER_ERROR;
+        master_unlock();
         return false;
     }
 
@@ -147,39 +190,64 @@ bool bpga_modbus_master_init(void)
                 ESP_LOGE(TAG, "Modbus controller deletion failed: %s", esp_err_to_name(delete_err));
             }
         }
+        master_unlock();
         return false;
     }
 
     status.initialized = true;
     status.state = BPGA_MODBUS_MASTER_READY;
     ESP_LOGI(TAG, "Modbus master initialized");
+    master_unlock();
     return true;
 }
 
 void bpga_modbus_master_deinit(void)
 {
+    if (master_mutex == NULL || !master_lock()) {
+        return;
+    }
     if (modbus_handle != NULL) {
         esp_err_t err = mbc_master_delete(modbus_handle);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Modbus controller deletion failed: %s", esp_err_to_name(err));
             status.last_error = err;
             status.state = BPGA_MODBUS_MASTER_ERROR;
+            master_unlock();
             return;
         }
         modbus_handle = NULL;
     }
     status.initialized = false;
     status.state = BPGA_MODBUS_MASTER_STOPPED;
+    master_unlock();
 }
 
 bool bpga_modbus_master_is_ready(void)
 {
-    return status.initialized && status.state == BPGA_MODBUS_MASTER_READY;
+    if (!master_lock()) {
+        return false;
+    }
+    bool ready = master_is_ready_unlocked();
+    master_unlock();
+    return ready;
 }
 
 bpga_modbus_master_status_t bpga_modbus_master_get_status(void)
 {
-    return status;
+    if (master_mutex == NULL) {
+        return status;
+    }
+    if (!master_lock()) {
+        const bpga_modbus_master_status_t unavailable = {
+            .state = BPGA_MODBUS_MASTER_ERROR,
+            .enabled = true,
+            .last_error = ESP_FAIL,
+        };
+        return unavailable;
+    }
+    bpga_modbus_master_status_t result = status;
+    master_unlock();
+    return result;
 }
 
 bool bpga_modbus_master_get_cache(bpga_modbus_master_cache_t *output)
@@ -187,13 +255,29 @@ bool bpga_modbus_master_get_cache(bpga_modbus_master_cache_t *output)
     if (output == NULL) {
         return false;
     }
+    if (master_mutex == NULL) {
+        *output = cache;
+        return true;
+    }
+    if (!master_lock()) {
+        return false;
+    }
     *output = cache;
+    master_unlock();
     return true;
 }
 
 void bpga_modbus_master_clear_cache(void)
 {
+    if (master_mutex == NULL) {
+        cache = (bpga_modbus_master_cache_t){0};
+        return;
+    }
+    if (!master_lock()) {
+        return;
+    }
     cache = (bpga_modbus_master_cache_t){0};
+    master_unlock();
 }
 
 static void record_read_success(void)
@@ -216,7 +300,7 @@ static esp_err_t read_input_registers_block(
     uint16_t *buffer
 )
 {
-    if (!bpga_modbus_master_is_ready()) {
+    if (!master_is_ready_unlocked()) {
         ESP_LOGW(TAG, "Modbus master not ready");
         return ESP_FAIL;
     }
@@ -243,6 +327,9 @@ bool bpga_modbus_master_read_identification(
     if (output == NULL) {
         return false;
     }
+    if (!master_lock()) {
+        return false;
+    }
 
     uint16_t registers[BPGA_MODBUS_IDENTIFICATION_COUNT];
     esp_err_t err = read_input_registers_block(
@@ -251,6 +338,7 @@ bool bpga_modbus_master_read_identification(
             registers);
     if (err != ESP_OK) {
         record_read_failure(err);
+        master_unlock();
         return false;
     }
 
@@ -261,6 +349,7 @@ bool bpga_modbus_master_read_identification(
             &decoded)) {
         ESP_LOGW(TAG, "Failed to decode identification block");
         record_read_failure(ESP_FAIL);
+        master_unlock();
         return false;
     }
 
@@ -268,6 +357,7 @@ bool bpga_modbus_master_read_identification(
     cache.identification = decoded;
     cache.identification_valid = true;
     record_read_success();
+    master_unlock();
     return true;
 }
 
@@ -278,6 +368,9 @@ bool bpga_modbus_master_read_snapshot(
     if (output == NULL) {
         return false;
     }
+    if (!master_lock()) {
+        return false;
+    }
 
     uint16_t registers[BPGA_MODBUS_SNAPSHOT_COUNT];
     esp_err_t err = read_input_registers_block(
@@ -286,6 +379,7 @@ bool bpga_modbus_master_read_snapshot(
             registers);
     if (err != ESP_OK) {
         record_read_failure(err);
+        master_unlock();
         return false;
     }
 
@@ -296,6 +390,7 @@ bool bpga_modbus_master_read_snapshot(
             &decoded)) {
         ESP_LOGW(TAG, "Failed to decode snapshot block");
         record_read_failure(ESP_FAIL);
+        master_unlock();
         return false;
     }
 
@@ -303,6 +398,7 @@ bool bpga_modbus_master_read_snapshot(
     cache.snapshot = decoded;
     cache.snapshot_valid = true;
     record_read_success();
+    master_unlock();
     return true;
 }
 
@@ -313,6 +409,9 @@ bool bpga_modbus_master_read_diagnostics(
     if (output == NULL) {
         return false;
     }
+    if (!master_lock()) {
+        return false;
+    }
 
     uint16_t registers[BPGA_MODBUS_DIAGNOSTICS_COUNT];
     esp_err_t err = read_input_registers_block(
@@ -321,6 +420,7 @@ bool bpga_modbus_master_read_diagnostics(
             registers);
     if (err != ESP_OK) {
         record_read_failure(err);
+        master_unlock();
         return false;
     }
 
@@ -331,6 +431,7 @@ bool bpga_modbus_master_read_diagnostics(
             &decoded)) {
         ESP_LOGW(TAG, "Failed to decode diagnostics block");
         record_read_failure(ESP_FAIL);
+        master_unlock();
         return false;
     }
 
@@ -338,6 +439,7 @@ bool bpga_modbus_master_read_diagnostics(
     cache.diagnostics = decoded;
     cache.diagnostics_valid = true;
     record_read_success();
+    master_unlock();
     return true;
 }
 

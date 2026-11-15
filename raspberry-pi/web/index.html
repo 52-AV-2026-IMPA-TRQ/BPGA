@@ -208,6 +208,47 @@ footer {
   outline: 3px solid #ffc766;
   outline-offset: 2px;
 }
+
+.stale-banner {
+  position: absolute;
+  z-index: 20;
+  top: 15vh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  min-width: min(620px, 88vw);
+  padding: 1.2vh 2vw;
+  border: 2px solid #ffc766;
+  border-radius: 10px;
+  background: rgba(113, 65, 0, .96);
+  color: #ffffff;
+  text-align: center;
+  font-size: clamp(16px, 1.35vw, 24px);
+  font-weight: bold;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .45);
+}
+
+.stale-banner.visible {
+  display: block;
+}
+
+body.data-stale .instrument {
+  opacity: .52;
+  filter: grayscale(.45);
+}
+
+body.data-stale .value {
+  color: #ffc766;
+}
+
+body.data-stale .status {
+  background: #8a5900;
+}
+
+body.data-lost .status {
+  background: #9c2f2f;
+}
+
 </style>
 </head>
 <body>
@@ -218,6 +259,14 @@ footer {
   </div>
   <div id="connection" class="status offline">SIN COMUNICACIÓN</div>
 </header>
+
+<div id="stale-banner"
+     class="stale-banner"
+     role="status"
+     aria-live="assertive">
+  DATOS CONGELADOS
+</div>
+
 
 <main>
   <section id="screen-monitor"
@@ -439,6 +488,56 @@ const PHASES = {
   6: "Desacelerando"
 };
 
+
+let lastSuccessfulReception = null;
+
+function setCommunicationState(data) {
+  const indicator = document.getElementById("connection");
+  const banner = document.getElementById("stale-banner");
+  const now = Date.now();
+
+  if (data.online && data.dataValid) {
+    lastSuccessfulReception = now;
+    document.body.classList.remove("data-stale", "data-lost");
+    banner.classList.remove("visible");
+    banner.textContent = "DATOS CONGELADOS";
+    indicator.textContent = "BANCO CONECTADO";
+    indicator.className = "status online";
+    return;
+  }
+
+  const frozenFor =
+    lastSuccessfulReception === null
+      ? null
+      : Math.max(0, now - lastSuccessfulReception);
+
+  document.body.classList.add("data-stale");
+  banner.classList.add("visible");
+
+  if (frozenFor === null) {
+    document.body.classList.add("data-lost");
+    indicator.textContent = "SIN COMUNICACIÓN";
+    indicator.className = "status offline";
+    banner.textContent = "SIN DATOS VÁLIDOS";
+    return;
+  }
+
+  const seconds = (frozenFor / 1000).toFixed(1);
+
+  banner.textContent =
+    `DATOS CONGELADOS · última recepción hace ${seconds} s`;
+
+  if (frozenFor >= 2000) {
+    document.body.classList.add("data-lost");
+    indicator.textContent = "COMUNICACIÓN PERDIDA";
+    indicator.className = "status offline";
+  } else {
+    document.body.classList.remove("data-lost");
+    indicator.textContent = "DATOS CONGELADOS";
+    indicator.className = "status";
+  }
+}
+
 function text(id, value) {
   document.getElementById(id).textContent = value;
 }
@@ -496,15 +595,7 @@ async function update() {
     const data = await response.json();
     const measurement = data.measurement || {};
 
-    indicator.textContent =
-      data.online && data.dataValid
-        ? "BANCO CONECTADO"
-        : "DATOS INCOMPLETOS";
-
-    indicator.className =
-      data.online && data.dataValid
-        ? "status online"
-        : "status offline";
+    setCommunicationState(data);
 
     text("rpm", measurement.rpm ?? 0);
     text("voltage", ((measurement.voltageMv ?? 0) / 1000).toFixed(1));
@@ -557,8 +648,10 @@ async function update() {
       data.online && data.dataValid ? "Válida" : "No válida"
     );
   } catch (error) {
-    indicator.textContent = "SIN COMUNICACIÓN";
-    indicator.className = "status offline";
+    setCommunicationState({
+      online: false,
+      dataValid: false,
+    });
   } finally {
     setTimeout(update, 200);
   }

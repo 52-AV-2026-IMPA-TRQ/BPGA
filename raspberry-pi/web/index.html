@@ -427,14 +427,38 @@ body.data-lost .status {
     </article>
 
     <article class="panel">
-      <h2>Resultado provisional</h2>
+      <h2>Máximos y acumulados</h2>
       <div class="data-list">
         <div class="data-row">
-          <span>Estado</span>
+          <span>RPM máxima</span>
+          <strong id="result-max-rpm">0 rpm</strong>
+        </div>
+        <div class="data-row">
+          <span>Tensión máxima</span>
+          <strong id="result-max-voltage">0.0 V</strong>
+        </div>
+        <div class="data-row">
+          <span>Corriente máxima</span>
+          <strong id="result-max-current">0.00 A</strong>
+        </div>
+        <div class="data-row">
+          <span>Potencia máxima</span>
+          <strong id="result-max-power">0 W</strong>
+        </div>
+        <div class="data-row">
+          <span>Muestras procesadas</span>
+          <strong id="result-samples">0</strong>
+        </div>
+        <div class="data-row">
+          <span>Tiempo de sesión</span>
+          <strong id="result-time">0 min 00 s</strong>
+        </div>
+        <div class="data-row">
+          <span>Estado actual</span>
           <strong id="result-state">Inicializando</strong>
         </div>
         <div class="data-row">
-          <span>Fase</span>
+          <span>Fase actual</span>
           <strong id="result-phase">Detenido</strong>
         </div>
         <div class="data-row">
@@ -547,8 +571,25 @@ function text(id, value) {
   document.getElementById(id).textContent = value;
 }
 
+const SCREEN_ORDER = [
+  "monitor",
+  "diagnostics",
+  "architecture",
+  "results",
+];
+
 let activeScreen = "monitor";
 let returnTimer = null;
+
+const sessionStats = {
+  firstSampleAt: null,
+  lastSequence: null,
+  samples: 0,
+  maxRpm: 0,
+  maxVoltageMv: 0,
+  maxCurrentMa: 0,
+  maxPowerW: 0,
+};
 
 function selectScreen(name) {
   const selected = document.querySelector(
@@ -592,6 +633,117 @@ document.querySelectorAll(".nav-button").forEach((button) => {
   });
 });
 
+function moveScreen(direction) {
+  const currentIndex = SCREEN_ORDER.indexOf(activeScreen);
+
+  if (currentIndex < 0) {
+    selectScreen("monitor");
+    return;
+  }
+
+  const nextIndex =
+    (currentIndex + direction + SCREEN_ORDER.length)
+    % SCREEN_ORDER.length;
+
+  selectScreen(SCREEN_ORDER[nextIndex]);
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    moveScreen(1);
+  }
+
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    moveScreen(-1);
+  }
+
+  if (event.key === "Home") {
+    event.preventDefault();
+    selectScreen("monitor");
+  }
+});
+
+function formatElapsed(milliseconds) {
+  const totalSeconds = Math.max(
+    0,
+    Math.floor(milliseconds / 1000)
+  );
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes} min ${String(seconds).padStart(2, "0")} s`;
+}
+
+function updateSessionStats(measurement, dataValid) {
+  if (!dataValid) {
+    return;
+  }
+
+  const sequence = measurement.sequence;
+
+  if (
+    sequence === undefined
+    || sequence === null
+    || sequence === sessionStats.lastSequence
+  ) {
+    return;
+  }
+
+  sessionStats.lastSequence = sequence;
+  sessionStats.samples += 1;
+
+  if (sessionStats.firstSampleAt === null) {
+    sessionStats.firstSampleAt = Date.now();
+  }
+
+  sessionStats.maxRpm = Math.max(
+    sessionStats.maxRpm,
+    measurement.rpm ?? 0
+  );
+
+  sessionStats.maxVoltageMv = Math.max(
+    sessionStats.maxVoltageMv,
+    measurement.voltageMv ?? 0
+  );
+
+  sessionStats.maxCurrentMa = Math.max(
+    sessionStats.maxCurrentMa,
+    measurement.currentMa ?? 0
+  );
+
+  sessionStats.maxPowerW = Math.max(
+    sessionStats.maxPowerW,
+    measurement.powerW ?? 0
+  );
+
+  text("result-max-rpm", `${sessionStats.maxRpm} rpm`);
+
+  text(
+    "result-max-voltage",
+    `${(sessionStats.maxVoltageMv / 1000).toFixed(1)} V`
+  );
+
+  text(
+    "result-max-current",
+    `${(sessionStats.maxCurrentMa / 1000).toFixed(2)} A`
+  );
+
+  text(
+    "result-max-power",
+    `${sessionStats.maxPowerW} W`
+  );
+
+  text("result-samples", sessionStats.samples);
+
+  text(
+    "result-time",
+    formatElapsed(Date.now() - sessionStats.firstSampleAt)
+  );
+}
+
 async function update() {
   const indicator = document.getElementById("connection");
 
@@ -601,6 +753,11 @@ async function update() {
     const measurement = data.measurement || {};
 
     setCommunicationState(data);
+
+    updateSessionStats(
+      measurement,
+      data.online && data.dataValid
+    );
 
     text("rpm", measurement.rpm ?? 0);
     text("voltage", ((measurement.voltageMv ?? 0) / 1000).toFixed(1));

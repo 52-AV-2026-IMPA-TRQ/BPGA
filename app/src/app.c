@@ -5,13 +5,15 @@
 #include "task.h"
 #include "sapi.h"
 #include "bpga_measurement.h"
+#include "bpga_controller.h"
 #include "bpga_simulator.h"
 #include "bpga_modbus_slave.h"
 
 #define BPGA_HEARTBEAT_PRIORITY    (tskIDLE_PRIORITY + 1U)
 #define BPGA_MEASUREMENT_PRIORITY  (tskIDLE_PRIORITY + 2U)
-#define BPGA_SIMULATOR_PRIORITY    (tskIDLE_PRIORITY + 3U)
-#define BPGA_MODBUS_PRIORITY       (tskIDLE_PRIORITY + 4U)
+#define BPGA_CONTROLLER_PRIORITY   (tskIDLE_PRIORITY + 3U)
+#define BPGA_SIMULATOR_PRIORITY    (tskIDLE_PRIORITY + 4U)
+#define BPGA_MODBUS_PRIORITY       (tskIDLE_PRIORITY + 5U)
 
 static void bpgaHeartbeatTask(void *parameters)
 {
@@ -49,6 +51,11 @@ int main(void)
         bpgaFatalError();
     }
 
+    status = bpgaControllerInit();
+    if (status != pdPASS) {
+        bpgaFatalError();
+    }
+
     status = bpgaModbusSlaveInit();
     if (status != pdPASS) {
         bpgaFatalError();
@@ -57,6 +64,11 @@ int main(void)
     status = xTaskCreate(bpgaMeasurementTask, "BPGA_DATA",
                          configMINIMAL_STACK_SIZE * 2U, NULL,
                          BPGA_MEASUREMENT_PRIORITY, NULL);
+    if (status == pdPASS) {
+        status = xTaskCreate(bpgaControllerTask, "BPGA_CTRL",
+                             configMINIMAL_STACK_SIZE * 2U, NULL,
+                             BPGA_CONTROLLER_PRIORITY, NULL);
+    }
     if (status == pdPASS) {
         status = xTaskCreate(bpgaSimulatorTask, "BPGA_SIM",
                              configMINIMAL_STACK_SIZE * 2U, NULL,

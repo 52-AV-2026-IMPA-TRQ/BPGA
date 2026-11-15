@@ -32,7 +32,7 @@ typedef struct {
     uint32_t timestamp_ms;
     uint32_t rpm;
     uint32_t voltage_mV;
-    uint32_t current_mA;
+    uint32_t current_mA; /* Generator output current (not drive motor or excitation). */
     uint32_t status_flags;
     bpga_data_source_t source;
     bpga_sim_state_t simulator_state;

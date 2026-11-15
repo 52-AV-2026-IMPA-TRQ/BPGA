@@ -94,7 +94,15 @@ void app_main(void)
     netbiosns_init();
     netbiosns_set_name(MDNS_HOST_NAME);
 
-    ESP_ERROR_CHECK(example_connect());
-    ESP_ERROR_CHECK(init_fs());
-    ESP_ERROR_CHECK(start_rest_server(WEB_PAGE_MOUNT_POINT_IN_FS));
+    /* Pendiente para una etapa posterior: reconexión no bloqueante y
+     * arranque diferido de servicios. */
+    esp_err_t network_err = example_connect();
+    if (network_err == ESP_OK) {
+        ESP_LOGI(TAG, "Network available, starting HTTP");
+        ESP_ERROR_CHECK(init_fs());
+        ESP_ERROR_CHECK(start_rest_server(WEB_PAGE_MOUNT_POINT_IN_FS));
+    } else {
+        ESP_LOGW(TAG, "Network unavailable (%s), HTTP not started; Modbus, cache and local controller keep running",
+                 esp_err_to_name(network_err));
+    }
 }

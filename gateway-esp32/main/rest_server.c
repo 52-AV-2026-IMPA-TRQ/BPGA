@@ -16,6 +16,7 @@
 
 #include "bench_core.h"
 #include "bench_rest_api.h"
+#include "bpga_rest_api.h"
 
 static const char *TAG = "esp-rest";
 
@@ -320,6 +321,8 @@ esp_err_t start_rest_server(const char *base_path)
 
     /* Simulated command and input endpoints (diagnostics only) */
     ESP_GOTO_ON_ERROR(bench_rest_api_register(server, rest_context), err_stop, TAG, "Failed to register bench API");
+    /* Read-only BPGA status backed by the Modbus master cache */
+    ESP_GOTO_ON_ERROR(bpga_rest_api_register(server, rest_context), err_stop, TAG, "Failed to register BPGA API");
     /* URI handler for fetching temperature data */
     httpd_uri_t temperature_data_get_uri = {
         .uri = "/api/v1/temp/raw",

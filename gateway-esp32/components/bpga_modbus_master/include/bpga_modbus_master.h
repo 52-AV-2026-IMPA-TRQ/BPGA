@@ -32,10 +32,12 @@ typedef struct {
 typedef struct {
     bool identification_valid;
     bool snapshot_valid;
+    bool totals_valid;
     bool diagnostics_valid;
 
     bpga_modbus_identification_t identification;
     bpga_modbus_snapshot_t snapshot;
+    bpga_modbus_totals_t totals;
     bpga_modbus_diagnostics_t diagnostics;
 
     uint64_t last_success_us;
@@ -116,6 +118,17 @@ bool bpga_modbus_master_read_identification(
  */
 bool bpga_modbus_master_read_snapshot(
     bpga_modbus_snapshot_t *output
+);
+
+/**
+ * @brief Read totals block (16 input registers at 0x0030-0x003F).
+ *
+ * @param[out] output Pointer to totals structure.
+ * @return true if read and decoded successfully, false otherwise.
+ *         output is not modified on error.
+ */
+bool bpga_modbus_master_read_totals(
+    bpga_modbus_totals_t *output
 );
 
 /**

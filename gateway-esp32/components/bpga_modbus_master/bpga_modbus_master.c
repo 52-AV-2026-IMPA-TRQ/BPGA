@@ -3,6 +3,8 @@
 
 #if defined(CONFIG_BPGA_MODBUS_ENABLED) && CONFIG_BPGA_MODBUS_ENABLED
 
+#include <stdio.h>
+
 #include "bpga_modbus_map.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
@@ -91,6 +93,79 @@ static uart_parity_t get_uart_parity(void)
 #else
     return UART_PARITY_EVEN;
 #endif
+}
+
+static void log_effective_uart_configuration(void)
+{
+    uint32_t baudrate;
+    uart_word_length_t data_bits;
+    uart_parity_t parity;
+    uart_stop_bits_t stop_bits;
+    gpio_io_config_t rts_config;
+    char baud_text[11] = "unknown";
+    const char *data_text = "unknown";
+    const char *parity_text = "unknown";
+    const char *stop_text = "unknown";
+    const char *rts_level_text = "unknown";
+    const int rts_level = gpio_get_level(CONFIG_BPGA_MODBUS_UART_RTS_GPIO);
+
+    esp_err_t read_err = uart_get_baudrate(CONFIG_BPGA_MODBUS_UART_PORT, &baudrate);
+    if (read_err == ESP_OK) {
+        snprintf(baud_text, sizeof(baud_text), "%lu", (unsigned long)baudrate);
+    } else {
+        ESP_LOGW(TAG, "uart_get_baudrate failed: %s", esp_err_to_name(read_err));
+    }
+
+    read_err = uart_get_word_length(CONFIG_BPGA_MODBUS_UART_PORT, &data_bits);
+    if (read_err == ESP_OK) {
+        switch (data_bits) {
+        case UART_DATA_5_BITS: data_text = "5"; break;
+        case UART_DATA_6_BITS: data_text = "6"; break;
+        case UART_DATA_7_BITS: data_text = "7"; break;
+        case UART_DATA_8_BITS: data_text = "8"; break;
+        default: break;
+        }
+    } else {
+        ESP_LOGW(TAG, "uart_get_word_length failed: %s", esp_err_to_name(read_err));
+    }
+
+    read_err = uart_get_parity(CONFIG_BPGA_MODBUS_UART_PORT, &parity);
+    if (read_err == ESP_OK) {
+        switch (parity) {
+        case UART_PARITY_DISABLE: parity_text = "NONE"; break;
+        case UART_PARITY_EVEN: parity_text = "EVEN"; break;
+        case UART_PARITY_ODD: parity_text = "ODD"; break;
+        default: break;
+        }
+    } else {
+        ESP_LOGW(TAG, "uart_get_parity failed: %s", esp_err_to_name(read_err));
+    }
+
+    read_err = uart_get_stop_bits(CONFIG_BPGA_MODBUS_UART_PORT, &stop_bits);
+    if (read_err == ESP_OK) {
+        switch (stop_bits) {
+        case UART_STOP_BITS_1: stop_text = "1"; break;
+        case UART_STOP_BITS_1_5: stop_text = "1.5"; break;
+        case UART_STOP_BITS_2: stop_text = "2"; break;
+        default: break;
+        }
+    } else {
+        ESP_LOGW(TAG, "uart_get_stop_bits failed: %s", esp_err_to_name(read_err));
+    }
+
+    read_err = gpio_get_io_config(CONFIG_BPGA_MODBUS_UART_RTS_GPIO, &rts_config);
+    if (read_err != ESP_OK) {
+        ESP_LOGW(TAG, "gpio_get_io_config failed: %s", esp_err_to_name(read_err));
+    } else if (!rts_config.ie) {
+        ESP_LOGW(TAG, "RTS GPIO input is disabled; its level cannot be read");
+    } else {
+        rts_level_text = rts_level ? "1" : "0";
+    }
+
+    ESP_LOGI(TAG, "UART efectiva: port=%d baud=%s data=%s parity=%s stop=%s tx=%d rx=%d rts=%d rts_level=%s",
+             CONFIG_BPGA_MODBUS_UART_PORT, baud_text, data_text, parity_text, stop_text,
+             CONFIG_BPGA_MODBUS_UART_TX_GPIO, CONFIG_BPGA_MODBUS_UART_RX_GPIO,
+             CONFIG_BPGA_MODBUS_UART_RTS_GPIO, rts_level_text);
 }
 
 static bool validate_configuration(void)
@@ -184,6 +259,9 @@ bool bpga_modbus_master_init(void)
     }
     if (err == ESP_OK && CONFIG_BPGA_MODBUS_UART_RTS_GPIO != -1) {
         err = uart_set_mode(CONFIG_BPGA_MODBUS_UART_PORT, UART_MODE_RS485_HALF_DUPLEX);
+        if (err == ESP_OK) {
+            log_effective_uart_configuration();
+        }
     }
     if (err == ESP_OK) {
         err = mbc_master_set_descriptor(modbus_handle, device_parameters,
@@ -429,6 +507,47 @@ bool bpga_modbus_master_read_snapshot(
     return true;
 }
 
+bool bpga_modbus_master_read_totals(
+    bpga_modbus_totals_t *output
+)
+{
+    if (output == NULL) {
+        return false;
+    }
+    if (!master_lock()) {
+        return false;
+    }
+
+    uint16_t registers[BPGA_MODBUS_TOTALS_COUNT];
+    esp_err_t err = read_input_registers_block(
+            BPGA_MODBUS_TOTALS_START,
+            BPGA_MODBUS_TOTALS_COUNT,
+            registers);
+    if (err != ESP_OK) {
+        record_read_failure(err);
+        master_unlock();
+        return false;
+    }
+
+    bpga_modbus_totals_t decoded;
+    if (!bpga_modbus_decode_totals(
+            registers,
+            BPGA_MODBUS_TOTALS_COUNT,
+            &decoded)) {
+        ESP_LOGW(TAG, "Failed to decode totals block");
+        record_read_failure(ESP_FAIL);
+        master_unlock();
+        return false;
+    }
+
+    *output = decoded;
+    cache.totals = decoded;
+    cache.totals_valid = true;
+    record_read_success();
+    master_unlock();
+    return true;
+}
+
 bool bpga_modbus_master_read_diagnostics(
     bpga_modbus_diagnostics_t *output
 )
@@ -476,6 +595,7 @@ static void poll_task(void *arg)
     (void)arg;
     bpga_modbus_identification_t identification;
     bpga_modbus_snapshot_t snapshot;
+    bpga_modbus_totals_t totals;
     bpga_modbus_diagnostics_t diagnostics;
     TickType_t period = pdMS_TO_TICKS(CONFIG_BPGA_MODBUS_POLL_PERIOD_MS);
     if (period == 0) {
@@ -486,10 +606,11 @@ static void poll_task(void *arg)
     TickType_t last_wake = xTaskGetTickCount();
     while (ulTaskNotifyTake(pdTRUE, 0) == 0) {
         bool snapshot_ok = bpga_modbus_master_read_snapshot(&snapshot);
+        bool totals_ok = bpga_modbus_master_read_totals(&totals);
         bool diagnostics_ok = bpga_modbus_master_read_diagnostics(&diagnostics);
 
         if (master_lock()) {
-            if (snapshot_ok && diagnostics_ok) {
+            if (snapshot_ok && totals_ok && diagnostics_ok) {
                 poll_status.completed_cycles++;
             } else {
                 poll_status.failed_cycles++;
@@ -672,6 +793,14 @@ bool bpga_modbus_master_read_identification(
 
 bool bpga_modbus_master_read_snapshot(
     bpga_modbus_snapshot_t *output
+)
+{
+    (void)output;
+    return false;
+}
+
+bool bpga_modbus_master_read_totals(
+    bpga_modbus_totals_t *output
 )
 {
     (void)output;

@@ -1,8 +1,8 @@
 /**
  * Composables for dashboard application
  */
-import { onUnmounted, ref, watch } from 'vue'
-import { benchApi, lightApi, systemApi, tempApi } from '@/services/api'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { benchApi, bpgaApi, lightApi, systemApi, tempApi } from '@/services/api'
 
 /**
  * Composable for system information
@@ -219,5 +219,89 @@ export function useBenchStatus (interval = 500) {
     fetchStatus,
     startPolling,
     stopPolling,
+  }
+}
+
+/**
+ * Polling del estado BPGA.
+ *
+ * Usa setTimeout para evitar superponer solicitudes.
+ * Mantiene la última lectura válida ante errores.
+ * Excluye mutuamente: nunca permite dos solicitudes simultáneas.
+ */
+export function useBpgaStatus (interval = 500) {
+  const data = ref(null)
+  const loading = ref(false)
+  const error = ref(null)
+  const lastUpdate = ref(null)
+
+  let timer = null
+  let running = false
+  let requestInFlight = false
+
+  const refresh = async () => {
+    if (requestInFlight) {
+      return
+    }
+
+    requestInFlight = true
+    loading.value = true
+
+    try {
+      const response = await bpgaApi.getStatus().send({ force: true })
+      data.value = response
+      error.value = null
+      lastUpdate.value = new Date()
+    } catch (error_) {
+      error.value = error_
+      console.error('Failed to fetch BPGA status:', error_)
+    } finally {
+      requestInFlight = false
+      loading.value = false
+    }
+  }
+
+  const scheduleNext = () => {
+    if (!running) {
+      return
+    }
+
+    timer = setTimeout(async () => {
+      timer = null
+      await refresh()
+      scheduleNext()
+    }, interval)
+  }
+
+  const start = async () => {
+    if (running) {
+      return
+    }
+
+    running = true
+    await refresh()
+    scheduleNext()
+  }
+
+  const stop = () => {
+    running = false
+
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+  }
+
+  onMounted(start)
+  onUnmounted(stop)
+
+  return {
+    data,
+    loading,
+    error,
+    lastUpdate,
+    start,
+    stop,
+    refresh,
   }
 }

@@ -3,6 +3,7 @@ idf_component_register(
         "esp_rest_main.c"
         "rest_server.c"
         "bench_rest_api.c"
+        "bpga_rest_api.c"
     PRIV_REQUIRES
         esp_http_server
         esp_timer

@@ -5,7 +5,7 @@
 #include "task.h"
 
 #define BPGA_MODBUS_SLAVE_ADDRESS 1U
-#define BPGA_MODBUS_SLAVE_BAUD_RATE 115200U
+#define BPGA_MODBUS_SLAVE_BAUD_RATE 19200U
 
 BaseType_t bpgaModbusSlaveInit(void);
 void bpgaModbusSlaveTask(void *parameters);

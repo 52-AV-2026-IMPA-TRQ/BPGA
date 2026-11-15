@@ -511,16 +511,21 @@ function setCommunicationState(data) {
       ? null
       : Math.max(0, now - lastSuccessfulReception);
 
-  document.body.classList.add("data-stale");
-  banner.classList.add("visible");
-
   if (frozenFor === null) {
-    document.body.classList.add("data-lost");
+    document.body.classList.add("data-stale", "data-lost");
+    banner.classList.add("visible");
     indicator.textContent = "SIN COMUNICACIÓN";
     indicator.className = "status offline";
     banner.textContent = "SIN DATOS VÁLIDOS";
     return;
   }
+
+  if (frozenFor < 800) {
+    return;
+  }
+
+  document.body.classList.add("data-stale");
+  banner.classList.add("visible");
 
   const seconds = (frozenFor / 1000).toFixed(1);
 

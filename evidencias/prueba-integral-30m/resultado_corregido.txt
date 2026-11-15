@@ -1,0 +1,62 @@
+BPGA - RESULTADO CORREGIDO DE PRUEBA INTEGRAL
+==============================================
+
+Fecha de finalización:       2026-11-15 17:11:55
+Duración real:               1800,06 s
+Registros CSV:               1801
+
+ESTABILIDAD
+-----------
+
+Servicio inactivo:           0
+Errores API:                 0
+Datos inválidos:             0
+Errores web:                 0
+
+SECUENCIA
+---------
+
+Secuencias repetidas:        0
+Wraps normales:              3
+Regresiones reales:          0
+Primera secuencia:           20622
+Última secuencia:            12316
+
+Los tres descensos observados corresponden al retorno normal del contador
+lógico de 15 bits desde 32767 hasta 0. No representan reinicios, pérdida de
+datos ni regresiones reales.
+
+RENDIMIENTO
+-----------
+
+Latencia API mínima:         5,14 ms
+Latencia API media:          8,49 ms
+Latencia API máxima:         31,66 ms
+
+Latencia web mínima:         4,62 ms
+Latencia web media:          7,47 ms
+Latencia web máxima:         20,14 ms
+
+Edad de muestra mínima:      1 ms
+Edad de muestra media:       10,83 ms
+Edad de muestra máxima:      20 ms
+
+HARDWARE
+--------
+
+Temperatura mínima:          55,80 °C
+Temperatura media:           57,49 °C
+Temperatura máxima:          58,50 °C
+
+Máscara inicial:             0x50000
+Máscara final:               0x50000
+Eventos eléctricos activos:  0
+
+INTERFAZ
+--------
+
+Fallos Xorg:                 0
+Fallos Openbox:              0
+Fallos Chromium:             0
+
+RESULTADO FINAL:             APROBADA

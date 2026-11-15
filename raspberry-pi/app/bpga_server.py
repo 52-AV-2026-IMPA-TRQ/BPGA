@@ -39,15 +39,24 @@ cache = {
     },
 }
 
-WEB_ROOT = (
-    Path(__file__).resolve().parent.parent / "web"
-)
+APP_ROOT = Path(__file__).resolve().parent
 
-INDEX_FILE = WEB_ROOT / "index.html"
+INDEX_CANDIDATES = (
+    APP_ROOT / "web" / "index.html",
+    APP_ROOT.parent / "web" / "index.html",
+)
 
 
 def load_index_html():
-    return INDEX_FILE.read_bytes()
+    for candidate in INDEX_CANDIDATES:
+        if candidate.is_file():
+            return candidate.read_bytes()
+
+    searched = ", ".join(str(path) for path in INDEX_CANDIDATES)
+
+    raise FileNotFoundError(
+        f"No se encontró index.html. Rutas comprobadas: {searched}"
+    )
 
 
 def crc16_modbus(data):

@@ -8,12 +8,31 @@
 
 # Registros
 *.log
-
 # Archivos temporales
 .DS_Store
 Thumbs.db
 *~
 *.swp
 *.tmp
-
 .pnpm-store/
+# Compilaciones ESP-IDF
+**/build/
+**/build-*/
+**/.venv/
+**/venv/
+*.py[cod]
+**/node_modules/
+**/dist/
+*.tar.gz
+*.sha256
+*.csv
+# BPGA: artefactos locales
+/gateway-esp32/build-modbus/
+/gateway-esp32/build/
+/gateway-esp32/front/web-demo/node_modules/
+/gateway-esp32/front/web-demo/dist/
+/respaldos/
+/.vscode/
+__pycache__/
+*.pyc
+*.pyo

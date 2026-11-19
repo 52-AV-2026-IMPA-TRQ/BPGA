@@ -2,9 +2,21 @@
 #include "bpga_measurement.h"
 #include "sapi.h"
 
-#define BPGA_NOMINAL_RPM          3000U
+/* Didactic bench: DC series drive motor (1 HP, 220 VDC, 4.3 A, 1500 rpm)
+ * coupled to a separately excited DC generator under test (1 HP, 220 VDC,
+ * 3.4 A, 1500 rpm). The drive motor must never run uncoupled or unloaded.
+ *
+ * current_mA is the GENERATOR OUTPUT current. It is neither the drive motor
+ * current nor the excitation current.
+ *
+ * Not modelled yet (pending variables):
+ *  - drive motor current: 4300 mA nominal;
+ *  - excitation current: 248 mA reference.
+ */
+#define BPGA_NOMINAL_RPM          1500U
 #define BPGA_NOMINAL_VOLTAGE_MV   220000U
-#define BPGA_NOMINAL_CURRENT_MA   3000U
+#define BPGA_NOMINAL_CURRENT_MA   3400U
+#define BPGA_NO_LOAD_CURRENT_MA   150U
 
 static uint32_t ramp(uint32_t elapsed, uint32_t duration, uint32_t target)
 {
@@ -63,7 +75,8 @@ static void buildMeasurement(uint32_t cycleMs, bpga_measurement_t *m)
         m->simulator_state = BPGA_SIM_UNLOADING;
         m->rpm = BPGA_NOMINAL_RPM;
         m->voltage_mV = 218500U + ramp(t, 4000U, 1500U);
-        m->current_mA = BPGA_NOMINAL_CURRENT_MA - ramp(t, 4000U, 2850U);
+        m->current_mA = BPGA_NOMINAL_CURRENT_MA -
+                        ramp(t, 4000U, BPGA_NOMINAL_CURRENT_MA - BPGA_NO_LOAD_CURRENT_MA);
     } else if (cycleMs < 38000U) {
         uint32_t t = cycleMs - 32000U;
         m->simulator_state = BPGA_SIM_DECELERATING;

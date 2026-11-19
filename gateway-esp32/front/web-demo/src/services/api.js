@@ -74,3 +74,10 @@ export const benchApi = {
     hitSource: 'network',
   }),
 }
+
+export const bpgaApi = {
+  getStatus: () => alova.Get(`/api/v1/bpga/status?_t=${Date.now()}`, {
+    localCache: 0,
+    hitSource: 'network',
+  }),
+}

@@ -18,3 +18,5 @@ FREERTOS_HEAP_TYPE=1
 # sAPI utiliza el SysTick de FreeRTOS
 DEFINES+=TICK_OVER_RTOS
 DEFINES+=USE_FREERTOS
+
+INCLUDES += -Igateway-esp32/components/bpga_modbus_master/include

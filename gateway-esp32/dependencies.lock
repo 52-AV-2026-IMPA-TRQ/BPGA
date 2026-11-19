@@ -9,6 +9,16 @@ dependencies:
       registry_url: https://components.espressif.com/
       type: service
     version: 1.7.19~2
+  espressif/esp-modbus:
+    component_hash: 26a64a9531b5e15a1bbdb9064f2f8715df5b150bfb821dd493174a5aa7566bf8
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 2.1.4
   espressif/ethernet_init:
     component_hash: 6268f857d06a1c414d38d38d74632e0d94074f8f653106bfa4a1d475a74f8fe0
     dependencies:
@@ -148,20 +158,6 @@ dependencies:
       registry_url: https://components.espressif.com/
       type: service
     version: 1.4.1
-  espressif/ip101:
-    component_hash: ca74de570dda7c2e79ce501b935638b2957fd9ac42424ed30d854f1962970471
-    dependencies:
-    - name: idf
-      require: private
-      version: '>=6.0'
-    source:
-      registry_url: https://components.espressif.com
-      type: service
-    targets:
-    - esp32
-    - esp32p4
-    - esp32s31
-    version: 1.1.0
   espressif/mdns:
     component_hash: b5b30022c46302eab89c1d2e3b6fb5918a627563a7462f0ee284b22b9a934967
     dependencies:
@@ -188,9 +184,10 @@ dependencies:
     version: 1.22.3
 direct_dependencies:
 - espressif/cjson
+- espressif/esp-modbus
 - espressif/ethernet_init
 - espressif/mdns
 - joltwallet/littlefs
-manifest_hash: 6ff4f5647496cdc4be46ab3a0d8fb8281713f2918dfda15fc47072136883ccf4
+manifest_hash: c2d346cef190640a24fa9523fbe345e608d073bcf61535c5ac16274ca29e04e0
 target: esp32
 version: 3.0.0

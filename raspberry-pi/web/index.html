@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BPGA Aeronáutico</title>
+<style>
+:root {
+  color-scheme: dark;
+  font-family: Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #081521;
+  color: #eef6fb;
+}
+body {
+  display: grid;
+  grid-template-rows: 14vh 1fr 10vh;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2vh 3vw;
+  background: #12344c;
+  border-bottom: 3px solid #3d91c5;
+}
+.title h1 {
+  margin: 0;
+  font-size: clamp(22px, 2.2vw, 40px);
+}
+.title p {
+  margin: .5vh 0 0;
+  color: #b5d4e6;
+  font-size: clamp(12px, 1vw, 18px);
+}
+.status {
+  min-width: 220px;
+  padding: 1.2vh 1.4vw;
+  border-radius: 8px;
+  text-align: center;
+  font-size: clamp(15px, 1.2vw, 22px);
+  font-weight: bold;
+}
+.online { background: #176b43; }
+.offline { background: #9c2f2f; }
+main {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.screen {
+  display: none;
+  width: 100%;
+  height: 100%;
+  padding: 2.5vh 3vw;
+  overflow: hidden;
+}
+
+.screen.active {
+  display: grid;
+}
+
+.monitor-grid {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2vw;
+}
+
+.info-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2vw;
+}
+
+.panel {
+  min-width: 0;
+  min-height: 0;
+  padding: 2vh 2vw;
+  background: #102b3e;
+  border: 2px solid #386b88;
+  border-radius: 14px;
+}
+
+.panel h2 {
+  margin: 0 0 2vh;
+  color: #68c3f4;
+  font-size: clamp(20px, 1.8vw, 32px);
+}
+
+.data-list {
+  display: grid;
+  gap: 1.3vh;
+  margin: 0;
+}
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 2vw;
+  padding-bottom: .8vh;
+  border-bottom: 1px solid #315d76;
+  font-size: clamp(14px, 1.15vw, 21px);
+}
+
+.data-row span:first-child {
+  color: #a9c8d9;
+}
+
+.data-row strong {
+  text-align: right;
+  font-family: monospace;
+}
+.instrument {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #102b3e;
+  border: 2px solid #386b88;
+  border-radius: 14px;
+}
+.label {
+  color: #a9c8d9;
+  text-align: center;
+  font-size: clamp(15px, 1.4vw, 25px);
+}
+.value {
+  margin-top: 2vh;
+  color: #f7fbfd;
+  font-family: monospace;
+  font-size: clamp(45px, 5vw, 95px);
+  font-weight: bold;
+}
+.unit {
+  margin-top: 1vh;
+  color: #68c3f4;
+  font-size: clamp(18px, 1.5vw, 28px);
+}
+footer {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr 1.4fr;
+  gap: 1vw;
+  align-items: center;
+  padding: 1.5vh 3vw;
+  background: #102333;
+  border-top: 2px solid #315d76;
+}
+.footer-item {
+  min-width: 0;
+}
+.footer-label {
+  color: #91afbf;
+  font-size: clamp(11px, .9vw, 16px);
+}
+.footer-value {
+  margin-top: .5vh;
+  font-size: clamp(15px, 1.25vw, 23px);
+  font-weight: bold;
+}
+.warning {
+  color: #ffc766;
+}
+@media (max-width: 900px) {
+  main {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  body {
+    grid-template-rows: 17vh 1fr 16vh;
+  }
+}
+
+footer {
+  padding: 1.2vh 3vw;
+  background: #102333;
+  border-top: 2px solid #315d76;
+}
+
+.navigation {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1vw;
+  width: 100%;
+  height: 100%;
+}
+
+.nav-button {
+  border: 2px solid #386b88;
+  border-radius: 8px;
+  background: #102b3e;
+  color: #b5d4e6;
+  font-size: clamp(13px, 1.1vw, 20px);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.nav-button.active {
+  border-color: #68c3f4;
+  background: #22587a;
+  color: #ffffff;
+}
+
+.nav-button:focus-visible {
+  outline: 3px solid #ffc766;
+  outline-offset: 2px;
+}
+
+.stale-banner {
+  position: absolute;
+  z-index: 20;
+  top: 15vh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  min-width: min(620px, 88vw);
+  padding: 1.2vh 2vw;
+  border: 2px solid #ffc766;
+  border-radius: 10px;
+  background: rgba(113, 65, 0, .96);
+  color: #ffffff;
+  text-align: center;
+  font-size: clamp(16px, 1.35vw, 24px);
+  font-weight: bold;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .45);
+}
+
+.stale-banner.visible {
+  display: block;
+}
+
+body.data-stale .instrument {
+  opacity: .52;
+  filter: grayscale(.45);
+}
+
+body.data-stale .value {
+  color: #ffc766;
+}
+
+body.data-stale .status {
+  background: #8a5900;
+}
+
+body.data-lost .status {
+  background: #9c2f2f;
+}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="title">
+    <h1>✈ Banco de Pruebas de Generadores Aeronáuticos</h1>
+    <p>E.E.S.T. Nº7 «Taller Regional Quilmes» · IMPA</p>
+  </div>
+  <div id="connection" class="status offline">SIN COMUNICACIÓN</div>
+</header>
+
+<div id="stale-banner"
+     class="stale-banner"
+     role="status"
+     aria-live="assertive">
+  DATOS CONGELADOS
+</div>
+
+
+<main>
+  <section id="screen-monitor"
+           class="screen monitor-grid active"
+           data-screen="monitor">
+    <article class="instrument">
+      <div class="label">VELOCIDAD</div>
+      <div id="rpm" class="value">0</div>
+      <div class="unit">rpm</div>
+    </article>
+
+    <article class="instrument">
+      <div class="label">TENSIÓN DE SALIDA</div>
+      <div id="voltage" class="value">0.0</div>
+      <div class="unit">V</div>
+    </article>
+
+    <article class="instrument">
+      <div class="label">CORRIENTE DE SALIDA</div>
+      <div id="current" class="value">0.00</div>
+      <div class="unit">A</div>
+    </article>
+
+    <article class="instrument">
+      <div class="label">POTENCIA</div>
+      <div id="power" class="value">0</div>
+      <div class="unit">W</div>
+    </article>
+  </section>
+
+  <section id="screen-diagnostics"
+           class="screen info-grid"
+           data-screen="diagnostics">
+    <article class="panel">
+      <h2>Enlace Modbus</h2>
+      <div class="data-list">
+        <div class="data-row">
+          <span>Estado</span>
+          <strong id="diag-online">Inicializando</strong>
+        </div>
+        <div class="data-row">
+          <span>Secuencia</span>
+          <strong id="diag-sequence">0</strong>
+        </div>
+        <div class="data-row">
+          <span>Edad de muestra</span>
+          <strong id="diag-age">0 ms</strong>
+        </div>
+        <div class="data-row">
+          <span>Errores consecutivos</span>
+          <strong id="diag-errors">0</strong>
+        </div>
+        <div class="data-row">
+          <span>Último error</span>
+          <strong id="diag-last-error">—</strong>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <h2>Estado del controlador</h2>
+      <div class="data-list">
+        <div class="data-row">
+          <span>Estado</span>
+          <strong id="diag-state">Inicializando</strong>
+        </div>
+        <div class="data-row">
+          <span>Fase</span>
+          <strong id="diag-phase">Detenido</strong>
+        </div>
+        <div class="data-row">
+          <span>Flags de estado</span>
+          <strong id="diag-status-flags">0x0000</strong>
+        </div>
+        <div class="data-row">
+          <span>Flags de control</span>
+          <strong id="diag-control-flags">0x0000</strong>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section id="screen-architecture"
+           class="screen info-grid"
+           data-screen="architecture">
+    <article class="panel">
+      <h2>Cadena de adquisición</h2>
+      <div class="data-list">
+        <div class="data-row">
+          <span>Controlador</span>
+          <strong>EDU-CIAA</strong>
+        </div>
+        <div class="data-row">
+          <span>Bus</span>
+          <strong>Modbus RTU / RS-485</strong>
+        </div>
+        <div class="data-row">
+          <span>Adaptador</span>
+          <strong>GmM FT232R</strong>
+        </div>
+        <div class="data-row">
+          <span>Supervisor</span>
+          <strong>Raspberry Pi 3</strong>
+        </div>
+        <div class="data-row">
+          <span>Actualización</span>
+          <strong>5 Hz</strong>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <h2>Distribución de responsabilidades</h2>
+      <div class="data-list">
+        <div class="data-row">
+          <span>Control y seguridad</span>
+          <strong>EDU-CIAA</strong>
+        </div>
+        <div class="data-row">
+          <span>Adquisición Modbus</span>
+          <strong>Raspberry Pi</strong>
+        </div>
+        <div class="data-row">
+          <span>Interfaz</span>
+          <strong>Chromium quiosco</strong>
+        </div>
+        <div class="data-row">
+          <span>Emergencia</span>
+          <strong>Circuito físico</strong>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section id="screen-results"
+           class="screen info-grid"
+           data-screen="results">
+    <article class="panel">
+      <h2>Valores actuales</h2>
+      <div class="data-list">
+        <div class="data-row">
+          <span>RPM</span>
+          <strong id="result-rpm">0 rpm</strong>
+        </div>
+        <div class="data-row">
+          <span>Tensión</span>
+          <strong id="result-voltage">0.0 V</strong>
+        </div>
+        <div class="data-row">
+          <span>Corriente</span>
+          <strong id="result-current">0.00 A</strong>
+        </div>
+        <div class="data-row">
+          <span>Potencia</span>
+          <strong id="result-power">0 W</strong>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <h2>Máximos y acumulados</h2>
+      <div class="data-list">
+        <div class="data-row">
+          <span>RPM máxima</span>
+          <strong id="result-max-rpm">0 rpm</strong>
+        </div>
+        <div class="data-row">
+          <span>Tensión máxima</span>
+          <strong id="result-max-voltage">0.0 V</strong>
+        </div>
+        <div class="data-row">
+          <span>Corriente máxima</span>
+          <strong id="result-max-current">0.00 A</strong>
+        </div>
+        <div class="data-row">
+          <span>Potencia máxima</span>
+          <strong id="result-max-power">0 W</strong>
+        </div>
+        <div class="data-row">
+          <span>Muestras procesadas</span>
+          <strong id="result-samples">0</strong>
+        </div>
+        <div class="data-row">
+          <span>Tiempo de sesión</span>
+          <strong id="result-time">0 min 00 s</strong>
+        </div>
+        <div class="data-row">
+          <span>Estado actual</span>
+          <strong id="result-state">Inicializando</strong>
+        </div>
+        <div class="data-row">
+          <span>Fase actual</span>
+          <strong id="result-phase">Detenido</strong>
+        </div>
+        <div class="data-row">
+          <span>Calidad de datos</span>
+          <strong id="result-quality">Pendiente</strong>
+        </div>
+      </div>
+    </article>
+  </section>
+</main>
+
+<footer>
+  <nav class="navigation" aria-label="Pantallas BPGA">
+    <button type="button"
+            class="nav-button active"
+            data-target="monitor">
+      MONITOR
+    </button>
+    <button type="button"
+            class="nav-button"
+            data-target="diagnostics">
+      DIAGNÓSTICO
+    </button>
+    <button type="button"
+            class="nav-button"
+            data-target="architecture">
+      ARQUITECTURA
+    </button>
+    <button type="button"
+            class="nav-button"
+            data-target="results">
+      RESULTADOS
+    </button>
+  </nav>
+</footer>
+
+<script>
+const STATES = {
+  0: "Inicializando",
+  1: "Parada segura",
+  2: "Listo"
+};
+
+const PHASES = {
+  0: "Detenido",
+  1: "Acelerando",
+  2: "Sin carga eléctrica",
+  3: "Aplicando carga",
+  4: "Estable",
+  5: "Retirando carga",
+  6: "Desacelerando"
+};
+
+
+let lastSuccessfulReception = null;
+
+function setCommunicationState(data) {
+  const indicator = document.getElementById("connection");
+  const banner = document.getElementById("stale-banner");
+  const now = Date.now();
+
+  if (data.online && data.dataValid) {
+    lastSuccessfulReception = now;
+    document.body.classList.remove("data-stale", "data-lost");
+    banner.classList.remove("visible");
+    banner.textContent = "DATOS CONGELADOS";
+    indicator.textContent = "BANCO CONECTADO";
+    indicator.className = "status online";
+    return;
+  }
+
+  const frozenFor =
+    lastSuccessfulReception === null
+      ? null
+      : Math.max(0, now - lastSuccessfulReception);
+
+  if (frozenFor === null) {
+    document.body.classList.add("data-stale", "data-lost");
+    banner.classList.add("visible");
+    indicator.textContent = "SIN COMUNICACIÓN";
+    indicator.className = "status offline";
+    banner.textContent = "SIN DATOS VÁLIDOS";
+    return;
+  }
+
+  if (frozenFor < 800) {
+    return;
+  }
+
+  document.body.classList.add("data-stale");
+  banner.classList.add("visible");
+
+  const seconds = (frozenFor / 1000).toFixed(1);
+
+  banner.textContent =
+    `DATOS CONGELADOS · última recepción hace ${seconds} s`;
+
+  if (frozenFor >= 2000) {
+    document.body.classList.add("data-lost");
+    indicator.textContent = "COMUNICACIÓN PERDIDA";
+    indicator.className = "status offline";
+  } else {
+    document.body.classList.remove("data-lost");
+    indicator.textContent = "DATOS CONGELADOS";
+    indicator.className = "status";
+  }
+}
+
+function text(id, value) {
+  document.getElementById(id).textContent = value;
+}
+
+const SCREEN_ORDER = [
+  "monitor",
+  "diagnostics",
+  "architecture",
+  "results",
+];
+
+let activeScreen = "monitor";
+let returnTimer = null;
+
+const sessionStats = {
+  firstSampleAt: null,
+  lastSequence: null,
+  samples: 0,
+  maxRpm: 0,
+  maxVoltageMv: 0,
+  maxCurrentMa: 0,
+  maxPowerW: 0,
+};
+
+function selectScreen(name) {
+  const selected = document.querySelector(
+    `[data-screen="${name}"]`
+  );
+
+  if (!selected) {
+    return;
+  }
+
+  document.querySelectorAll(".screen").forEach((screen) => {
+    screen.classList.toggle(
+      "active",
+      screen.dataset.screen === name
+    );
+  });
+
+  document.querySelectorAll(".nav-button").forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.target === name
+    );
+  });
+
+  activeScreen = name;
+
+  if (returnTimer) {
+    clearTimeout(returnTimer);
+  }
+
+  if (name !== "monitor") {
+    returnTimer = setTimeout(() => {
+      selectScreen("monitor");
+    }, 60000);
+  }
+}
+
+document.querySelectorAll(".nav-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectScreen(button.dataset.target);
+  });
+});
+
+function moveScreen(direction) {
+  const currentIndex = SCREEN_ORDER.indexOf(activeScreen);
+
+  if (currentIndex < 0) {
+    selectScreen("monitor");
+    return;
+  }
+
+  const nextIndex =
+    (currentIndex + direction + SCREEN_ORDER.length)
+    % SCREEN_ORDER.length;
+
+  selectScreen(SCREEN_ORDER[nextIndex]);
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    moveScreen(1);
+  }
+
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    moveScreen(-1);
+  }
+
+  if (event.key === "Home") {
+    event.preventDefault();
+    selectScreen("monitor");
+  }
+});
+
+function formatElapsed(milliseconds) {
+  const totalSeconds = Math.max(
+    0,
+    Math.floor(milliseconds / 1000)
+  );
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${minutes} min ${String(seconds).padStart(2, "0")} s`;
+}
+
+function updateSessionStats(measurement, dataValid) {
+  if (!dataValid) {
+    return;
+  }
+
+  const sequence = measurement.sequence;
+
+  if (
+    sequence === undefined
+    || sequence === null
+    || sequence === sessionStats.lastSequence
+  ) {
+    return;
+  }
+
+  sessionStats.lastSequence = sequence;
+  sessionStats.samples += 1;
+
+  if (sessionStats.firstSampleAt === null) {
+    sessionStats.firstSampleAt = Date.now();
+  }
+
+  sessionStats.maxRpm = Math.max(
+    sessionStats.maxRpm,
+    measurement.rpm ?? 0
+  );
+
+  sessionStats.maxVoltageMv = Math.max(
+    sessionStats.maxVoltageMv,
+    measurement.voltageMv ?? 0
+  );
+
+  sessionStats.maxCurrentMa = Math.max(
+    sessionStats.maxCurrentMa,
+    measurement.currentMa ?? 0
+  );
+
+  sessionStats.maxPowerW = Math.max(
+    sessionStats.maxPowerW,
+    measurement.powerW ?? 0
+  );
+
+  text("result-max-rpm", `${sessionStats.maxRpm} rpm`);
+
+  text(
+    "result-max-voltage",
+    `${(sessionStats.maxVoltageMv / 1000).toFixed(1)} V`
+  );
+
+  text(
+    "result-max-current",
+    `${(sessionStats.maxCurrentMa / 1000).toFixed(2)} A`
+  );
+
+  text(
+    "result-max-power",
+    `${sessionStats.maxPowerW} W`
+  );
+
+  text("result-samples", sessionStats.samples);
+
+  text(
+    "result-time",
+    formatElapsed(Date.now() - sessionStats.firstSampleAt)
+  );
+}
+
+async function update() {
+  const indicator = document.getElementById("connection");
+
+  try {
+    const response = await fetch("/api/status", { cache: "no-store" });
+    const data = await response.json();
+    const measurement = data.measurement || {};
+
+    setCommunicationState(data);
+
+    updateSessionStats(
+      measurement,
+      data.online && data.dataValid
+    );
+
+    text("rpm", measurement.rpm ?? 0);
+    text("voltage", ((measurement.voltageMv ?? 0) / 1000).toFixed(1));
+    text("current", ((measurement.currentMa ?? 0) / 1000).toFixed(2));
+    text("power", measurement.powerW ?? 0);
+    text("age", `${measurement.sampleAgeMs ?? 0} ms`);
+
+    const state = measurement.systemState;
+    const phase = measurement.systemSubstate;
+
+    const stateText =
+      STATES[state] ?? `Desconocido (${state})`;
+
+    const phaseText =
+      PHASES[phase] ?? `Desconocido (${phase})`;
+
+    text("diag-online",
+      data.online && data.dataValid ? "Conectado" : "Sin datos");
+    text("diag-sequence", measurement.sequence ?? 0);
+    text("diag-age", `${measurement.sampleAgeMs ?? 0} ms`);
+    text("diag-errors", data.consecutiveErrors ?? 0);
+    text("diag-last-error", data.lastError ?? "—");
+    text("diag-state", stateText);
+    text("diag-phase", phaseText);
+    text(
+      "diag-status-flags",
+      `0x${(measurement.statusFlags ?? 0)
+        .toString(16).padStart(4, "0").toUpperCase()}`
+    );
+    text(
+      "diag-control-flags",
+      `0x${(measurement.controlFlags ?? 0)
+        .toString(16).padStart(4, "0").toUpperCase()}`
+    );
+
+    text("result-rpm", `${measurement.rpm ?? 0} rpm`);
+    text(
+      "result-voltage",
+      `${((measurement.voltageMv ?? 0) / 1000).toFixed(1)} V`
+    );
+    text(
+      "result-current",
+      `${((measurement.currentMa ?? 0) / 1000).toFixed(2)} A`
+    );
+    text("result-power", `${measurement.powerW ?? 0} W`);
+    text("result-state", stateText);
+    text("result-phase", phaseText);
+    text(
+      "result-quality",
+      data.online && data.dataValid ? "Válida" : "No válida"
+    );
+  } catch (error) {
+    setCommunicationState({
+      online: false,
+      dataValid: false,
+    });
+  } finally {
+    setTimeout(update, 200);
+  }
+}
+
+update();
+</script>
+</body>
+</html>

@@ -3,3 +3,4 @@ dependencies:
   espressif/cjson: "^1.7.19"
   espressif/mdns: "^1.8.0"
   joltwallet/littlefs: "^1.20.0"
+  espressif/esp-modbus: "^2.0.0"

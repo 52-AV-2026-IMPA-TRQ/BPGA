@@ -1,4 +1,6 @@
-# Desarrollo
+# Desarrollo (documento histórico/reemplazado)
+
+> **Clasificación: histórico o reemplazado.** Estas instrucciones pertenecen a una etapa anterior y no constituyen el procedimiento vigente de desarrollo o despliegue. Conservadas como antecedente; consulta [estado actual](Current-status.md) y [firmware EDU-CIAA](EDU-CIAA-firmware.md).
 
 ## Compilar
 

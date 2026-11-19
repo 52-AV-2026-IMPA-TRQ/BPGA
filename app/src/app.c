@@ -8,8 +8,10 @@
 #include "bpga_controller.h"
 #include "bpga_simulator.h"
 #include "bpga_modbus_slave.h"
+#include "bpga_gps.h"
 
 #define BPGA_HEARTBEAT_PRIORITY    (tskIDLE_PRIORITY + 1U)
+#define BPGA_GPS_PRIORITY          (tskIDLE_PRIORITY + 1U)
 #define BPGA_MEASUREMENT_PRIORITY  (tskIDLE_PRIORITY + 2U)
 #define BPGA_CONTROLLER_PRIORITY   (tskIDLE_PRIORITY + 3U)
 #define BPGA_SIMULATOR_PRIORITY    (tskIDLE_PRIORITY + 4U)
@@ -78,6 +80,11 @@ int main(void)
         status = xTaskCreate(bpgaHeartbeatTask, "BPGA_LED",
                              configMINIMAL_STACK_SIZE, NULL,
                              BPGA_HEARTBEAT_PRIORITY, NULL);
+    }
+    if (status == pdPASS) {
+        status = xTaskCreate(bpgaGpsTask, "BPGA_GPS",
+                             configMINIMAL_STACK_SIZE * 2U, NULL,
+                             BPGA_GPS_PRIORITY, NULL);
     }
     if (status == pdPASS) {
         status = xTaskCreate(bpgaModbusSlaveTask, "BPGA_MODBUS",

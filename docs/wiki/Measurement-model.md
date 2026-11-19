@@ -1,4 +1,6 @@
-# Modelo de mediciones
+# Modelo de mediciones (parcialmente vigente)
+
+> **Clasificación: parcialmente vigente.** RPM, tensión en mV, corriente en mA, secuencia, marca temporal, fuente simulada y fases del simulador existen en el firmware. No todos los metadatos de este modelo se publican o calculan actualmente por Modbus; no interpretes este texto como especificación de un sensor físico. Consulta [Modo Simulador](Simulation-mode.md) y [Protocolo Modbus RTU](Protocolo-Modbus-RTU.md).
 
 ## Magnitudes básicas
 

@@ -1,4 +1,6 @@
-# Hoja de ruta
+# Hoja de ruta (documento histórico/reemplazado)
+
+> **Clasificación: histórico o reemplazado.** La secuencia de implementación que sigue refleja una planificación anterior: varios hitos se completaron y la propuesta de gateway ESP32 ya no representa la arquitectura vigente. Se conserva como antecedente, no como plan aprobado. Consulta [desarrollo futuro](Future-development.md) y [diseños históricos](Historical-designs.md).
 
 1. Simulador determinista y modelo común de mediciones.
 2. Mapa de registros Modbus RTU.

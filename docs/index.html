@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="BPGA: demostrador educativo de adquisición, comunicación y supervisión.">
+  <title>BPGA | Banco de Prueba de Generadores Aeronáuticos</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#inicio"><span class="brand-mark">B</span> BPGA</a>
+      <nav class="desktop-nav" aria-label="Navegación principal">
+        <a href="#proyecto">El proyecto</a>
+        <a href="#funcionamiento">Cómo funciona</a>
+        <a href="#prueba">Prueba integral</a>
+        <a href="#estado">Estado</a>
+        <a href="#documentacion">Documentación</a>
+      </nav>
+      <details class="mobile-menu">
+        <summary>Menú</summary>
+        <nav aria-label="Navegación móvil">
+          <a href="#proyecto">El proyecto</a>
+          <a href="#funcionamiento">Cómo funciona</a>
+          <a href="#prueba">Prueba integral</a>
+          <a href="#estado">Estado</a>
+          <a href="#documentacion">Documentación</a>
+        </nav>
+      </details>
+    </div>
+  </header>
+
+  <main id="contenido">
+    <section class="hero" id="inicio">
+      <div class="container hero-grid">
+        <div>
+          <p class="eyebrow"><span class="signal" aria-hidden="true"></span> Proyecto educativo · Aviónica</p>
+          <h1>BPGA <span>Banco de Prueba de Generadores Aeronáuticos</span></h1>
+          <p class="hero-subtitle">Demostrador educativo de adquisición, comunicación y supervisión.</p>
+          <p class="hero-copy">Una aproximación a escala a los principios de un banco de pruebas, con EDU-CIAA y Raspberry Pi. La muestra prioriza la plataforma digital; la etapa de potencia permanece desenergizada.</p>
+          <div class="actions">
+            <a class="button button-primary" href="#funcionamiento">Cómo funciona <span aria-hidden="true">→</span></a>
+            <a class="button button-secondary" href="#estado">Estado del desarrollo</a>
+            <a class="text-link hero-link" href="https://github.com/52-AV-2026-IMPA-TRQ/BPGA">Ver repositorio <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="visual-heading"><span>CADENA DIGITAL</span><span class="visual-status">MODO SIMULADOR</span></div>
+          <div class="visual-path">
+            <div class="visual-node"><span class="node-index">01</span><div><strong>EDU-CIAA</strong><small>Variables simuladas</small></div></div>
+            <div class="visual-connector" aria-hidden="true"></div>
+            <div class="visual-node"><span class="node-index">02</span><div><strong>RS-485</strong><small>Modbus RTU</small></div></div>
+            <div class="visual-connector" aria-hidden="true"></div>
+            <div class="visual-node"><span class="node-index">03</span><div><strong>Raspberry Pi</strong><small>Supervisión local</small></div></div>
+          </div>
+          <p class="visual-note"><span class="signal" aria-hidden="true"></span> Etapa de potencia desenergizada</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="proyecto">
+      <div class="container split">
+        <div><p class="eyebrow">01 / EL PROYECTO</p><h2>Una idea de la aviación, llevada al aula.</h2></div>
+        <div class="prose">
+          <p>Un banco de pruebas permite observar el comportamiento de un generador fuera de la aeronave y bajo condiciones controladas. El BPGA reproduce ese principio a escala con una finalidad educativa.</p>
+          <p>El proyecto reúne máquinas eléctricas, instrumentación, sistemas embebidos, comunicaciones industriales y software. No es un equipo aeronáutico certificado ni está habilitado para validar componentes aeronáuticos.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tinted" id="funcionamiento">
+      <div class="container">
+        <div class="section-heading"><p class="eyebrow">02 / CÓMO FUNCIONA</p><h2>De una señal a una pantalla.</h2><p>El recorrido actual empieza con datos simulados y termina en una interfaz local.</p></div>
+        <ol class="steps">
+          <li><span>01</span><div><h3>Generación</h3><p>La EDU-CIAA genera variables mediante el Modo Simulador.</p></div></li>
+          <li><span>02</span><div><h3>Organización</h3><p>FreeRTOS organiza las tareas de la plataforma embebida.</p></div></li>
+          <li><span>03</span><div><h3>Comunicación</h3><p>Los valores se publican mediante Modbus RTU sobre RS-485.</p></div></li>
+          <li><span>04</span><div><h3>Consulta</h3><p>La Raspberry Pi consulta los registros disponibles.</p></div></li>
+          <li><span>05</span><div><h3>API local</h3><p>Una API HTTP local expone el estado del sistema.</p></div></li>
+          <li><span>06</span><div><h3>Supervisión</h3><p>La interfaz muestra monitorización, diagnóstico, arquitectura y resultados.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" id="demostracion">
+      <div class="container demo-grid">
+        <div><p class="eyebrow">03 / DEMOSTRACIÓN ACTUAL</p><h2>La plataforma digital en primer plano.</h2><p class="lead">El Modo Simulador es la base de la muestra: sus variables recorren la cadena digital completa.</p>
+          <p>La posible adquisición física de RPM mediante giro manual está sujeta a validación. La tensión y la corriente no se presentan como mediciones físicas actuales.</p>
+        </div>
+        <aside class="notice">
+          <p class="notice-label">ALCANCE DE LA MUESTRA</p>
+          <h3>Etapa de potencia desenergizada</h3>
+          <ul><li>El motor no se conecta a 220 V.</li><li>El generador y las cargas no funcionan energizados.</li><li>El PLC todavía no interviene en la operación.</li></ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section section-tinted" id="arquitectura">
+      <div class="container">
+        <div class="section-heading"><p class="eyebrow">04 / ARQUITECTURA</p><h2>Una cadena, distintas etapas.</h2><p>Las señales simuladas recorren la arquitectura operativa. Las entradas físicas se encuentran en integración.</p></div>
+        <ol class="architecture">
+          <li class="arch-entry"><span class="tag tag-active">Operativo</span><strong>Señales simuladas</strong><span class="tag tag-progress">En integración</span><span>Entradas físicas</span></li>
+          <li><span class="arch-number">01</span><strong>EDU-CIAA</strong><span>FreeRTOS</span></li>
+          <li><span class="arch-number">02</span><strong>Modbus RTU</strong><span>Sobre RS-485</span></li>
+          <li><span class="arch-number">03</span><strong>Raspberry Pi</strong><span>Supervisor</span></li>
+          <li><span class="arch-number">04</span><strong>API HTTP</strong><span>Local</span></li>
+          <li><span class="arch-number">05</span><strong>Interfaz</strong><span>Supervisión</span></li>
+        </ol>
+        <p class="architecture-future"><span class="tag tag-future">Futuro</span> Regulación, cargas, PLC, protecciones y etapa de potencia no forman parte de la operación actual.</p>
+      </div>
+    </section>
+
+    <section class="section" id="prueba">
+      <div class="container">
+        <div class="section-heading"><p class="eyebrow">05 / PRUEBA INTEGRAL</p><h2>Treinta minutos de estabilidad digital.</h2><p>Resultado técnico <span class="tag tag-active">APROBADA</span></p></div>
+        <dl class="metrics">
+          <div><dt>Duración</dt><dd>1800,06 <small>s</small></dd></div>
+          <div><dt>Registros</dt><dd>1801</dd></div>
+          <div><dt>Interrupciones del servicio</dt><dd>0</dd></div>
+          <div><dt>Errores de API</dt><dd>0</dd></div>
+          <div><dt>Datos inválidos</dt><dd>0</dd></div>
+          <div><dt>Errores web</dt><dd>0</dd></div>
+          <div><dt>Temperatura máxima</dt><dd>58,50 <small>°C</small></dd></div>
+          <div><dt>Latencia media de API</dt><dd>8,49 <small>ms</small></dd></div>
+          <div><dt>Edad media de muestra</dt><dd>10,83 <small>ms</small></dd></div>
+        </dl>
+        <p class="qualification">Esta prueba valida la estabilidad de la plataforma digital bajo la configuración ensayada. No valida la etapa electromecánica ni la etapa de potencia.</p>
+        <p class="resource-links"><a href="../evidencias/prueba-integral-30m/">Evidencias de la prueba →</a><a href="../raspberry-pi/tests/test_integral_30m.py">Script de la prueba →</a></p>
+        <p class="resource-note">Las rutas relativas de evidencias y código funcionan al consultar el repositorio completo; en GitHub Pages se publicará únicamente el contenido de <code>docs/</code>. Consultá también las <a href="https://github.com/52-AV-2026-IMPA-TRQ/BPGA/tree/main/evidencias/prueba-integral-30m">evidencias en GitHub</a> y el <a href="https://github.com/52-AV-2026-IMPA-TRQ/BPGA/blob/main/raspberry-pi/tests/test_integral_30m.py">script en GitHub</a>.</p>
+      </div>
+    </section>
+
+    <section class="section section-tinted" id="estado">
+      <div class="container">
+        <div class="section-heading"><p class="eyebrow">06 / ESTADO DEL DESARROLLO</p><h2>Lo que funciona y lo que sigue.</h2><p>Una plataforma educativa que avanza por etapas.</p></div>
+        <div class="status-grid">
+          <article class="status-card"><span class="tag tag-active">Implementado y validado</span><h3>Plataforma digital</h3><ul><li>Firmware EDU-CIAA con FreeRTOS.</li><li>Modo Simulador.</li><li>Modbus RTU sobre RS-485.</li><li>Supervisor Raspberry Pi y API HTTP local.</li><li>Interfaz en modo quiosco.</li><li>Detección de datos congelados y pérdida de comunicación, con recuperación automática.</li><li>Prueba integral de treinta minutos.</li></ul></article>
+          <article class="status-card"><span class="tag tag-progress">En integración o validación</span><h3>GPS y entradas físicas</h3><ul><li>GPS L86 conectado a USART3; recepción UART y sentencias RMC validadas.</li><li>Sincronización del RTC pendiente de una RMC válida.</li><li>Posible adquisición física de RPM, sujeta a validación.</li></ul><p>No se utiliza 1PPS y el GPS aún no forma parte del mapa Modbus.</p></article>
+          <article class="status-card"><span class="tag tag-future">Evolución prevista</span><h3>Hacia nuevas etapas</h3><ul><li>Sensores reales de tensión y corriente.</li><li>Integración completa del sensor de RPM.</li><li>Regulador de corriente de excitación.</li><li>Banco de cargas, PLC y protecciones.</li><li>Alimentación segura del conjunto motor-generador.</li><li>Validación de la etapa de potencia.</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="evolucion">
+      <div class="container split">
+        <div><p class="eyebrow">07 / EVOLUCIÓN PREVISTA</p><h2>Un regulador por desarrollar.</h2></div>
+        <div class="prose">
+          <p>En un generador de corriente continua con excitación independiente, la tensión puede regularse actuando sobre la corriente de campo. El BPGA contempló representar esa función.</p>
+          <p>El regulador fue estudiado conceptualmente, pero no fue construido ni validado. Actualmente no existe un lazo cerrado operativo.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tinted" id="documentacion">
+      <div class="container">
+        <div class="section-heading"><p class="eyebrow">08 / DOCUMENTACIÓN</p><h2>Para seguir explorando.</h2><p>Recursos versionados del proyecto y la prueba integral.</p></div>
+        <div class="docs-grid">
+          <a class="doc-card" href="https://github.com/52-AV-2026-IMPA-TRQ/BPGA"><span>01 / CÓDIGO</span><strong>Repositorio principal</strong><span>Explorar el proyecto en GitHub →</span></a>
+          <a class="doc-card" href="../README.md"><span>02 / INTRODUCCIÓN</span><strong>README del repositorio</strong><span>Descripción general →</span></a>
+          <a class="doc-card" href="wiki/Home.md"><span>03 / REFERENCIA</span><strong>Documentación técnica versionada</strong><span>Consultar documentos en docs/wiki/ →</span></a>
+          <a class="doc-card" href="../evidencias/prueba-integral-30m/"><span>04 / RESULTADOS</span><strong>Evidencias de la prueba</strong><span>Ver los registros →</span></a>
+        </div>
+        <p class="resource-note">Los documentos técnicos versionados pueden describir propuestas anteriores y no necesariamente reflejan la arquitectura actual. En GitHub también se pueden consultar el <a href="https://github.com/52-AV-2026-IMPA-TRQ/BPGA/blob/main/README.md">README</a>, la <a href="https://github.com/52-AV-2026-IMPA-TRQ/BPGA/tree/main/docs/wiki">documentación técnica</a> y las <a href="https://github.com/52-AV-2026-IMPA-TRQ/BPGA/tree/main/evidencias/prueba-integral-30m">evidencias</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div><a class="brand footer-brand" href="#inicio"><span class="brand-mark">B</span> BPGA</a><p>Proyecto educativo desarrollado en el ámbito de 5.º año de Aviónica de la E.E.S.T. N.º 7 IMPA TRQ durante el ciclo lectivo 2026.</p></div>
+      <div><strong>Licencia</strong><p>El repositorio utiliza la licencia <a href="../LICENSE">MIT</a> (<a href="https://github.com/52-AV-2026-IMPA-TRQ/BPGA/blob/main/LICENSE">ver en GitHub</a>).</p></div>
+    </div>
+  </footer>
+</body>
+</html>
